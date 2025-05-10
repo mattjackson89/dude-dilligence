@@ -1,0 +1,21 @@
+repos:
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.2.1
+    hooks:
+    -   id: ruff
+        args: [ --fix ]
+    -   id: ruff-format
+
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+    -   id: check-merge-conflict
+    -   id: detect-private-key
+
+ci:
+    autofix_commit_msg: '[pre-commit.ci] Auto format with pre-commit hooks'
+    autoupdate_commit_msg: '[pre-commit.ci] Update pre-commit hooks' 

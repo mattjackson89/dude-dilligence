@@ -1,0 +1,59 @@
+[project]
+name = "dude-diligence-workspace"
+version = "0.1.0"
+description = "AI-powered due diligence tool using LLM agents"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dude-diligence",
+]
+
+[dependency-groups]
+app = [
+    "gradio>=3.50.2",
+]
+notebooks = [
+    "jupyter>=1.0.0",
+    "matplotlib>=3.7.0",
+    "pandas>=2.0.0",
+]
+dev = [
+    "ruff>=0.1.0",
+    "pytest>=7.3.1",
+    "pytest-cov>=4.1.0",
+    "mypy>=1.5.1",
+    "pre-commit>=3.5.0",
+]
+
+[tool.uv.sources]
+dude-diligence = { path = "dude_diligence", editable = true }
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+select = ["E", "F", "I", "W", "N", "D", "UP", "B", "A", "C4", "SIM", "ERA"]
+ignore = ["D100", "D104", "D107", "D203", "D213"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.isort]
+combine-as-imports = true
+known-first-party = ["dude_diligence", "app"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+

@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./app:/app/app
+      - ./dude_diligence:/app/dude_diligence
+    env_file:
+      - .env
+    restart: unless-stopped
