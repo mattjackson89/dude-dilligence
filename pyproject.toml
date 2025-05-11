@@ -5,6 +5,7 @@ description = "AI-powered due diligence tool using LLM agents"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "duckduckgo-search>=8.0.1",
     "dude-diligence",
 ]
 
@@ -31,20 +32,28 @@ dude-diligence = { path = "dude_diligence", editable = true }
 [tool.ruff]
 target-version = "py313"
 line-length = 100
+
+# Exclude Jupyter notebooks from linting
+exclude = [
+    "notebooks/*.ipynb",
+    "**/*.ipynb"
+]
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "W", "N", "D", "UP", "B", "A", "C4", "SIM", "ERA"]
 ignore = ["D100", "D104", "D107", "D203", "D213"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["dude_diligence", "app"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
-
-[tool.ruff.isort]
-combine-as-imports = true
-known-first-party = ["dude_diligence", "app"]
-
-[tool.ruff.pydocstyle]
-convention = "google"
 
 [tool.mypy]
 python_version = "3.13"

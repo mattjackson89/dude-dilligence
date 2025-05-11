@@ -56,26 +56,29 @@ python -m app.main
 
 ## Agent-powered Research (Johnny's Secret Technique)
 
-Dude Diligence is powered by smol-agents, a lightweight LLM agent framework that lets Johnny Bravo flex his research muscles:
+Dude Diligence is powered by a multi-agent system using smol-agents, a lightweight LLM agent framework that lets Johnny Bravo orchestrate specialized research agents:
 
-- **Code Agents**: Johnny writes Python code to analyze companies
-- **Tool Integration**: Johnny can search the web, check company registries, and look up LinkedIn profiles
-- **Interactive UI**: Watch Johnny do his research in real-time with cool visualizations
+- **Manager Agent (Johnny Bravo)**: Coordinates all research and compiles findings
+- **Finder Agent**: Searches the web for public company information
+- **Companies House Agent**: Retrieves official UK registry data
+- **Additional Research Agent**: Placeholder for future specialized research
 
-### Using the Agent from Python
+This hierarchical approach enables more comprehensive and structured due diligence, with each agent specializing in a different aspect of the research.
 
-You can also use the agent programmatically:
+### Using the Multi-Agent System from Python
+
+You can use the multi-agent system programmatically:
 
 ```python
-from dude_diligence.agents import create_dude_diligence_agent
+from dude_diligence import run_due_diligence, visualize_agent_structure
 
-# Create the agent
-agent = create_dude_diligence_agent()
+# Visualize the agent structure (optional)
+visualize_agent_structure()
 
 # Run due diligence on a company
-result = agent.run(
-    "Perform due diligence research on the company 'Acme Ltd' based in United Kingdom. "
-    "Focus on leadership and financial information."
+result = run_due_diligence(
+    company_name="Acme Ltd",
+    research_areas=["Company Profile", "Leadership", "Financials"]
 )
 
 # Print the results
@@ -99,15 +102,15 @@ dude-diligence/
 │   └── dev.ipynb         # For prototyping (Johnny rehearsing)
 └── dude_diligence/       # Core package (Johnny's muscles)
     ├── __init__.py       # Package marker (Johnny was here)
-    ├── agents.py         # Agent orchestration (Johnny's moves)
+    ├── agents.py   # Multi-agent orchestration (Johnny's team)
     ├── tools/            # Agent tools (Johnny's gadgets)
     │   ├── __init__.py
-    │   ├── web_search.py
     │   ├── companies_house.py
     │   └── linkedin.py
     └── utils/            # Utilities (Johnny's accessories)
         ├── __init__.py
         ├── prompts.py    # LLM prompts (Johnny's pickup lines)
+        ├── model.py      # Model configuration (Johnny's brain)
         └── parsers.py    # Response parsers (Johnny's translators)
 ```
 

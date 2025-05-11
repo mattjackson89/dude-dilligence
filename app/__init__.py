@@ -1,1 +1,1 @@
-"""App package for Dude Diligence UI.""" 
+"""App package for Dude Diligence UI."""

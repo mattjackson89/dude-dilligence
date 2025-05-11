@@ -1,123 +1,258 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
-"""Core agent orchestration for Dude Diligence.
+"""Multi-agent system for company due diligence.
 
-As Johnny would say: "Hey there, Pretty Data! I'm gonna analyze you real good!"
+This module implements a hierarchical multi-agent system where specialized agents
+work together to perform comprehensive UK company due diligence.
+
+As Johnny Bravo would say: "Hey there, Pretty Companies! Let me check you out!" *hair flip*
 """
 
 import logging
-import os
-from typing import Dict, List, Any, Optional
+from typing import Any
 
-from dude_diligence.tools.web_search import search_company
-from dude_diligence.tools.companies_house import get_company_profile
-from dude_diligence.tools.linkedin import fetch_linkedin_data
-from dude_diligence.utils.prompts import SYSTEM_PROMPT, REPORT_TEMPLATE
-from dude_diligence.utils.parsers import parse_response
+from smolagents import CodeAgent, DuckDuckGoSearchTool, tool
 
-from smolagents import (
-    CodeAgent, 
-    OpenAIServerModel, 
-    HfApiModel, 
-    PromptTemplates,
-    PlanningPromptTemplate,
-    ManagedAgentPromptTemplate,
-    FinalAnswerPromptTemplate
+from dude_diligence.tools.companies_house import (
+    explore_companies_house_api,
+    get_charges,
+    get_company_officers,
+    get_company_profile,
+    get_endpoint_parameters,
+    get_filing_history,
+    get_persons_with_significant_control,
+    get_schema_examples,
+    perform_company_due_diligence,
+    search_companies,
+)
+from dude_diligence.utils.model import get_agent_model
+from dude_diligence.utils.prompts import (
+    ADDITIONAL_RESEARCH_AGENT_PROMPT,
+    COMPANIES_HOUSE_AGENT_PROMPT,
+    FINDER_AGENT_PROMPT,
+    MANAGER_AGENT_PROMPT,
 )
 
-# Set up logging (Johnny keeps track of his pickup attempts)
 logger = logging.getLogger(__name__)
 
-def get_agent_model():
-    """Get the appropriate LLM model for the agent based on environment variables.
-    
-    Johnny's checking what model he can flirt with today!
-    
-    Returns:
-        An initialized model for the smolagents
-    """
-    # Check for OpenAI API key
-    if os.getenv("OPENAI_API_KEY"):
-        logger.info("Using OpenAI model for the agent")
-        return OpenAIServerModel(
-            model_id="gpt-4o",
-            temperature=0.2,
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
-    
-    # Fallback to Hugging Face model
-    logger.info("Using Hugging Face model for the agent")
-    return HfApiModel(
-        model_id="meta-llama/Llama-3.3-70B-Instruct",
-        temperature=0.2,
-    )
 
-def create_dude_diligence_agent():
-    """Create and return the due diligence agent with all necessary tools.
-    
-    Johnny's assembling his research toolkit!
-    
+def create_finder_agent() -> CodeAgent:
+    """Create a specialized agent that focuses on finding company information from the web.
+
+    This agent uses web search tools to find information about companies
+    from public sources like websites, news articles, and business directories.
+
     Returns:
-        CodeAgent: An initialized agent with all due diligence tools
+        CodeAgent: A configured finder agent
     """
-    # Get the model for the agent
     model = get_agent_model()
     
-    # Create the agent with our tools - using default prompts
-    agent = CodeAgent(
+    finder_agent = CodeAgent(
         model=model,
-        tools=[
-            get_company_profile,
-            search_company,
-            fetch_linkedin_data
-        ]
-        # No custom prompt_templates, using defaults
+        tools=[DuckDuckGoSearchTool()],
+        name="finder_agent",
+        description="Johnny Bravo's web searcher: finding company info with style and flair"
     )
     
-    return agent
+    return finder_agent
 
-def run_dude_diligence(
-    company_name: str,
-    country: str = "United Kingdom",
-    research_areas: Optional[List[str]] = None,
-) -> str:
-    """Run the due diligence process for a given company.
-    
-    Johnny's approach to company research - flex those investigative muscles!
-    
-    Args:
-        company_name: Name of the company to research
-        country: Country where the company is registered
-        research_areas: Specific areas to research
-        
+
+def create_companies_house_agent() -> CodeAgent:
+    """Create a specialized agent for retrieving Companies House data.
+
+    This agent focuses on gathering comprehensive official data from
+    the Companies House registry.
+
     Returns:
-        str: Formatted markdown report with research findings
+        CodeAgent: A configured Companies House data agent with Johnny's swagger
+    """
+    model = get_agent_model()
+
+    companies_house_agent = CodeAgent(
+        model=model,
+        tools=[
+            search_companies,
+            get_company_profile,
+            get_company_officers,
+            get_filing_history,
+            get_persons_with_significant_control,
+            get_charges,
+            perform_company_due_diligence,
+            explore_companies_house_api,
+            get_endpoint_parameters,
+            get_schema_examples,
+        ],
+        name="companies_house_agent",
+        description="Johnny's official data collector: retrieving UK company data with flair"
+    )
+
+    return companies_house_agent
+
+
+# Create a placeholder tool for the additional research agent
+@tool
+def get_research_capabilities() -> dict[str, Any]:
+    """Get information about future research capabilities.
+
+    This tool provides information about what research capabilities
+    will be added in future versions of the system.
+
+    Returns:
+        Dict containing information about future capabilities with Johnny's optimism
+    """
+    future_capabilities = {
+        "social_media_analysis": {
+            "status": "planned",
+            "description": "Analyze company presence on social media - Johnny style!",
+            "timeline": "In development - getting my hair ready for the cameras!",
+        },
+        "news_monitoring": {
+            "status": "planned",
+            "description": "Monitor news articles about the company - the way Johnny monitors the ladies!",
+            "timeline": "Future enhancement - working on my pickup lines!",
+        },
+        "financial_analysis": {
+            "status": "planned",
+            "description": "Advanced financial statement analysis - Johnny knows numbers too, baby!",
+            "timeline": "Planned for next version - flexing my analytical muscles!",
+        },
+        "competitor_analysis": {
+            "status": "planned",
+            "description": "Analysis of company competitors - Johnny always checks out the competition!",
+            "timeline": "Future enhancement - gotta stay ahead of those other guys!",
+        },
+    }
+
+    return {
+        "current_status": "Just warming up, baby! *hair flip*",
+        "message": "This agent is a placeholder but will be as impressive as Johnny's biceps soon!",
+        "future_capabilities": future_capabilities,
+    }
+
+
+def create_additional_research_agent() -> CodeAgent:
+    """Create a placeholder agent for future research capabilities.
+
+    This agent is a placeholder for future expansion with additional
+    research capabilities like social media analysis, sentiment analysis, etc.
+
+    Returns:
+        CodeAgent: A configured placeholder research agent with Johnny's optimism
+    """
+    model = get_agent_model()
+
+    additional_research_agent = CodeAgent(
+        model=model,
+        tools=[get_research_capabilities],
+        name="additional_research_agent",
+        description="Johnny's future research muscles - not yet flexed but full of potential!"
+    )
+
+    return additional_research_agent
+
+
+def create_manager_agent() -> CodeAgent:
+    """Create a manager agent that coordinates the specialized agents.
+
+    This agent delegates tasks to specialized agents and compiles their
+    findings into a comprehensive due diligence report.
+
+    Returns:
+        CodeAgent: A configured manager agent with Johnny's leadership swagger
+    """
+    model = get_agent_model()
+
+    # Create the specialized agents
+    finder_agent = create_finder_agent()
+    companies_house_agent = create_companies_house_agent()
+    additional_research_agent = create_additional_research_agent()
+
+    # Create the manager agent with the specialized agents
+    manager_agent = CodeAgent(
+        model=model,
+        tools=[],  # Manager doesn't need direct tools
+        managed_agents=[finder_agent, companies_house_agent, additional_research_agent],
+        name="manager_agent",
+        description="Johnny Bravo himself: coordinating agents and flexing analytical muscles",
+        planning_interval=3  # Plan after every 3 steps - Johnny likes to keep things moving!
+    )
+
+    return manager_agent
+
+
+def run_due_diligence(
+    company_name: str,
+    research_areas: list[str] | None = None,
+) -> str:
+    """Run a multi-agent due diligence process for a UK company.
+
+    This function coordinates multiple specialized agents to perform
+    comprehensive due diligence on a UK company.
+
+    Args:
+        company_name: Name of the UK company to research (the "pretty lady" of the hour)
+        research_areas: Specific areas to research (Johnny's pickup lines)
+
+    Returns:
+        str: Formatted markdown report with research findings and Johnny's commentary
     """
     if research_areas is None:
         research_areas = ["Basic Info"]
-    
-    # Johnny announces his intentions
-    logger.info(f"Starting due diligence for {company_name} in {country}")
-    
-    # Create the agent
-    agent = create_dude_diligence_agent()
-    
-    # Format the task with your domain-specific instructions
+
+    # Log the start of the process
+    logger.info(f"Johnny Bravo is checking out UK company '{company_name}' *hair flip*")
+
+    # Create the manager agent
+    manager_agent = create_manager_agent()
+
+    # Format the task instructions, including the MANAGER_AGENT_PROMPT
     task = f"""
-    Perform due diligence research on the company '{company_name}' based in {country}.
-    Focus on these areas: {', '.join(research_areas)}.
+    {MANAGER_AGENT_PROMPT}
     
-    {SYSTEM_PROMPT}
-    
-    Collect information from available sources, analyze the data, and generate a comprehensive
-    due diligence report that includes company profile, market analysis, leadership team, 
-    financials, and risks/opportunities assessment.
-    
-    Return the final report in markdown format.
+    Coordinate a comprehensive due diligence investigation on the UK company '{company_name}'.
+    Focus on these research areas: {", ".join(research_areas)}.
+
+    Follow this workflow:
+    1. First use the finder_agent to gather information about the company from public web sources
+       When using the finder_agent, instruct it with: "{FINDER_AGENT_PROMPT}"
+       
+    2. Then use the companies_house_agent to gather comprehensive official data from the UK registry
+       When using the companies_house_agent, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"
+       
+    3. Also check with the additional_research_agent about future research capabilities
+       When using the additional_research_agent, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
+       
+    4. Finally, analyze all the information and compile a detailed due diligence report
+
+    Your final report should include:
+    - Executive summary with key findings (with Johnny's enthusiasm)
+    - Company overview and structure (delivered with confidence)
+    - Leadership analysis (with comments on which executives have "style")
+    - Financial assessment (presented with Johnny-style flair)
+    - Risk analysis and opportunities (with Johnny's optimism)
+    - Suggestions for future research (based on the additional_research_agent's capabilities)
+
+    Return the final report in professional markdown format with Johnny Bravo's unique flair,
+    including occasional catchphrases like "Hey there, pretty data!", "Oh mama!", and "*does hair flip*"
+    action markers when presenting particularly important findings.
     """
-    
-    # Run the agent with this task
-    result = agent.run(task)
-    
-    return result 
+
+    # Run the manager agent with this task
+    result = manager_agent.run(task)
+
+    return result
+
+
+def visualize_agent_structure():
+    """Visualize the multi-agent structure.
+
+    This function creates and visualizes the multi-agent structure
+    without running any tasks.
+
+    Returns:
+        None
+    """
+    manager_agent = create_manager_agent()
+    manager_agent.visualize()
+
+    return "Multi-agent structure visualization complete. Man, I'm pretty! *hair flip*"
