@@ -59,7 +59,7 @@ def run_example():
     print("\n=== Running Multi-Agent Due Diligence ===\n")
 
     # Example UK company to research
-    company_name = "Tesla Motors UK"
+    company_name = "Scrubmarine"
     research_areas = ["Company Overview", "Officers", "Financial Status"]
 
     print(f"Starting multi-agent due diligence for '{company_name}'...")

@@ -14,23 +14,58 @@ JOHNNY_YELLOW = "#FFD700"
 JOHNNY_BLACK = "#000000"
 JOHNNY_BLUE = "#1E90FF"
 
+class ReportContextAgent:
+    """Wrapper around the agent to ensure report context is included with each interaction."""
+    
+    def __init__(self, base_agent):
+        self.base_agent = base_agent
+        self.report = ""
+        self.company_name = ""
+        self.name = "Johnny Bravo"  # Add name attribute for GradioUI compatibility
+    
+    def set_report_context(self, report, company_name):
+        """Set the report context for future interactions."""
+        self.report = report
+        self.company_name = company_name
+    
+    def run(self, user_message):
+        """Run the agent with the report context included."""
+        if not self.report:
+            return "No report has been generated yet. Please run due diligence first."
+        
+        prompt = f"""
+        You are Johnny Bravo, a charismatic and knowledgeable assistant who helps with company research.
+        You have completed a due diligence report for {self.company_name}.
+        
+        Here is the report for context:
+        {self.report}
+        
+        The user's question is: {user_message}
+        
+        Answer their question based on this report. If information isn't in the report,
+        explain that it wasn't covered in the initial research but you can help look into it.
+        
+        Always maintain Johnny Bravo's confident and slightly flamboyant personality.
+        """
+        
+        return self.base_agent.run(prompt)
 
 def create_ui():
     """Create and return the Gradio UI interface.
-
-    Johnny Bravo's slick and stylish interface for due diligence.
 
     Returns:
         gr.Blocks: The Gradio interface
     """
     # Get the manager agent for the UI
-    agent = create_manager_agent()
+    base_agent = create_manager_agent()
+    # Wrap it to include context
+    context_agent = ReportContextAgent(base_agent)
     
-    # Store the report for context in subsequent chat
-    report_state = gr.State("")
-    company_state = gr.State("")
-    
-    with gr.Blocks(theme=gr.themes.Base(), css="footer {visibility: hidden}") as ui:
+    # Create the UI
+    with gr.Blocks(theme=gr.themes.Base(), css="""
+        footer {visibility: hidden}
+        .contain {height: 600px; overflow-y: auto;}
+    """) as ui:
         # Header
         gr.HTML(
             f"""
@@ -41,161 +76,150 @@ def create_ui():
             """
         )
         
-        # Due Diligence Form (initially visible)
-        with gr.Group(visible=True) as dd_section:
-            gr.HTML("<h2>Run Due Diligence Report</h2>")
-            with gr.Row():
-                with gr.Column():
-                    company_input = gr.Textbox(
-                        label="Company Name",
-                        placeholder="Enter UK company name (e.g., Tesla Motors UK)",
-                    )
-                    research_areas = gr.Textbox(
-                        label="Research Areas (comma-separated)",
-                        placeholder="Company Overview, Officers, Financial Status",
-                        value="Company Overview, Officers, Financial Status"
-                    )
-                    
-                    # Status indicator for the report generation
-                    status_html = gr.HTML("")
-                    
-                    run_button = gr.Button("Run Due Diligence", variant="primary")
-                
-                with gr.Column():
-                    report_output = gr.Markdown(label="Report")
-                    chat_button = gr.Button("Discuss this report with Johnny", visible=False)
-        
-        # Chat Section (initially hidden)
-        with gr.Group(visible=False) as chat_section:
-            # Create a chat interface without displaying it yet
-            gr.HTML("<h2>Chat with Johnny about the report</h2>")
-            
-            # We'll create a custom chat interface since we can't directly manipulate GradioUI
-            chatbot = gr.Chatbot(height=500)
-            msg = gr.Textbox(
-                placeholder="Ask me anything about the report...",
-                label="Your Message"
+        # Due Diligence Form
+        with gr.Row():
+            company_input = gr.Textbox(
+                label="Company Name",
+                placeholder="Enter UK company name (e.g., Tesla Motors UK)",
             )
-            clear = gr.Button("Clear Chat")
-            
-            # Initialize with the report summary
-            report_summary = gr.Markdown()
+            research_areas = gr.Textbox(
+                label="Research Areas (comma-separated)",
+                placeholder="Company Overview, Officers, Financial Status",
+                value="Company Overview, Officers, Financial Status"
+            )
         
-        # Functions for the UI
+        # Status indicator
+        status_html = gr.HTML("")
+        
+        # Submit button
+        submit_btn = gr.Button("Run Due Diligence", variant="primary")
+        
+        # Results section with report and chat side by side
+        with gr.Row(visible=False) as results_row:
+            # Report on left (75% width)
+            with gr.Column(scale=3):
+                gr.Markdown("## Due Diligence Report")
+                report_output = gr.Markdown(elem_classes=["contain"])
+            
+            # Chat on right (25% width)
+            with gr.Column(scale=1):
+                gr.Markdown("## Chat with Johnny")
+                # Built-in Gradio Chatbot component
+                chatbot = gr.Chatbot(
+                    height=500,
+                    bubble_full_width=False,
+                    show_copy_button=True,
+                    avatar_images=(None, "https://www.clipartmax.com/png/middle/112-1127678_johnny-bravo-logo-png-transparent-johnny-bravo.png")
+                )
+                chat_input = gr.Textbox(
+                    placeholder="Ask Johnny about the report...",
+                    label="Your message"
+                )
+                clear_btn = gr.Button("Clear Chat")
+        
+        # Functions
         def start_processing():
             """Show that processing has started."""
             return """
-            <div style="text-align: center; margin-top: 10px;">
-                <p style="color: #1E90FF; font-weight: bold;">
-                    <img src="https://media.giphy.com/media/3o7bu3XilJ5BOiSGic/giphy.gif" alt="loading" width="20" height="20" style="vertical-align: middle;"> 
+            <div style="text-align: center; margin: 20px auto;">
+                <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2RnbzZyOHB2Y2lrMGxzemR2YTlnMGJxa2t6cWw4ZHpyODQzY3B3NCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/1KUdeIpGxXAdi/giphy.gif" 
+                     alt="Johnny Bravo flexing" 
+                     width="150" 
+                     style="display: block; margin: 0 auto 15px auto;">
+                <p style="color: #1E90FF; font-weight: bold; font-size: 18px;">
                     Johnny is flexing his research muscles... This might take a minute!
                 </p>
             </div>
             """
         
         def run_due_diligence_report(company_name, research_areas_text):
-            """Run the due diligence report and store it for context."""
+            """Run the due diligence report and return results."""
             if not company_name:
                 return (
                     "Hey there! I need a company name to flex my research muscles!", 
-                    "", 
-                    company_name, 
-                    False,
                     """<div style="text-align: center; margin-top: 10px;">
-                       <p style="color: #FF4500; font-weight: bold;">❌ Please enter a company name</p>
-                       </div>"""
+                       <p style="color: #FF4500; font-weight: bold;"> Please enter a company name</p>
+                       </div>""",
+                    gr.update(visible=False),
+                    []
                 )
             
             research_areas = [area.strip() for area in research_areas_text.split(",") if area.strip()]
             try:
                 result = run_due_diligence(company_name, research_areas)
                 
-                # Clear the status and make the chat button visible
+                # Set report context for the agent
+                context_agent.set_report_context(result, company_name)
+                
+                # Create initial chat message
+                initial_message = f"Hey there, hot stuff! I've just completed the due diligence on {company_name}. Ask me anything about it! *flexes muscles*"
+                
+                # Make results container visible
                 return (
                     result, 
-                    result, 
-                    company_name, 
-                    True,
                     """<div style="text-align: center; margin-top: 10px;">
-                       <p style="color: #008000; font-weight: bold;">✅ Report generated successfully!</p>
-                       </div>"""
+                       <p style="color: #008000; font-weight: bold;"> Report generated successfully!</p>
+                       </div>""",
+                    gr.update(visible=True),
+                    [[None, initial_message]]
                 )
             except Exception as e:
                 return (
                     f"Whoops! Johnny couldn't complete the research: {str(e)}", 
-                    "", 
-                    company_name, 
-                    False,
                     """<div style="text-align: center; margin-top: 10px;">
-                       <p style="color: #FF4500; font-weight: bold;">❌ There was an error generating the report</p>
-                       </div>"""
+                       <p style="color: #FF4500; font-weight: bold;"> There was an error generating the report</p>
+                       </div>""",
+                    gr.update(visible=False),
+                    []
                 )
         
-        def prepare_chat(report, company):
-            """Prepare the chat interface with the report context."""
-            summary = f"## Due Diligence Report for {company}\n\nI've completed a full report on {company}. You can ask me specific questions about it now!"
-            return True, False, summary, [[None, f"Hey there! I've completed the due diligence report for {company}. What would you like to know about it?"]]
+        def respond_to_chat(message, chat_history):
+            """Process a chat message and return Johnny's response."""
+            if message.strip() == "":
+                return "", chat_history
+            
+            # Get response from our context-aware agent
+            response = context_agent.run(message)
+            
+            # Update chat history
+            chat_history.append([message, response])
+            
+            return "", chat_history
         
-        def chat(message, history, report):
-            """Process chat messages with report context."""
-            # Add user message to history
-            history.append([message, None])
-            
-            # Prepare prompt with context from the report
-            prompt = f"""
-            The user is asking about a company due diligence report. Here's the report for context:
-            
-            {report}
-            
-            Their question is: {message}
-            
-            Answer their question based on the information in the report. If the information isn't in the report,
-            you can explain that it wasn't covered in the initial research but you can help look into it.
-            """
-            
-            # Get response from agent
-            response = agent.run(prompt)
-            
-            # Update history with assistant response
-            history[-1][1] = response
-            return history
+        def clear_chat_history():
+            """Clear the chat history."""
+            company_name = context_agent.company_name or "the company"
+            initial_message = f"Hey there, hot stuff! I've just completed the due diligence on {company_name}. Ask me anything about it! *flexes muscles*"
+            return [[None, initial_message]]
         
-        def clear_chat(report, company):
-            """Clear the chat history but keep context."""
-            summary = f"## Due Diligence Report for {company}\n\nI've completed a full report on {company}. You can ask me specific questions about it now!"
-            return summary, [[None, f"Hey there! I've completed the due diligence report for {company}. What would you like to know about it?"]]
-            
         # Connect UI components
-        run_button.click(
+        submit_btn.click(
             fn=start_processing,
             inputs=None,
             outputs=status_html
         ).then(
             fn=run_due_diligence_report,
             inputs=[company_input, research_areas],
-            outputs=[report_output, report_state, company_state, chat_button, status_html]
+            outputs=[
+                report_output, 
+                status_html,
+                results_row,
+                chatbot
+            ]
         )
         
-        chat_button.click(
-            fn=prepare_chat,
-            inputs=[report_state, company_state],
-            outputs=[chat_section, dd_section, report_summary, chatbot]
+        # Handle chat interactions
+        chat_input.submit(
+            fn=respond_to_chat,
+            inputs=[chat_input, chatbot],
+            outputs=[chat_input, chatbot]
         )
         
-        msg.submit(
-            fn=chat,
-            inputs=[msg, chatbot, report_state],
-            outputs=[chatbot]
-        ).then(
-            lambda: "",
-            None,
-            msg
-        )
-        
-        clear.click(
-            fn=clear_chat,
-            inputs=[report_state, company_state],
-            outputs=[report_summary, chatbot]
+        # Clear chat button
+        clear_btn.click(
+            fn=clear_chat_history,
+            inputs=None,
+            outputs=chatbot
         )
     
     return ui
