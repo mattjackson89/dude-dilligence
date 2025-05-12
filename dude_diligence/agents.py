@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-
+# ruff: noqa: E501
 """Multi-agent system for company due diligence.
 
 This module implements a hierarchical multi-agent system where specialized agents
@@ -46,14 +45,14 @@ def create_finder_agent() -> CodeAgent:
         CodeAgent: A configured finder agent
     """
     model = get_agent_model()
-    
+
     finder_agent = CodeAgent(
         model=model,
         tools=[DuckDuckGoSearchTool()],
         name="finder_agent",
-        description="Johnny Bravo's web searcher: finding company info with style and flair"
+        description="Johnny Bravo's web searcher: finding company info with style and flair",
     )
-    
+
     return finder_agent
 
 
@@ -83,7 +82,7 @@ def create_companies_house_agent() -> CodeAgent:
             get_schema_examples,
         ],
         name="companies_house_agent",
-        description="Johnny's official data collector: retrieving UK company data with flair"
+        description="Johnny's official data collector: retrieving UK company data with flair",
     )
 
     return companies_house_agent
@@ -145,7 +144,7 @@ def create_additional_research_agent() -> CodeAgent:
         model=model,
         tools=[get_research_capabilities],
         name="additional_research_agent",
-        description="Johnny's future research muscles - not yet flexed but full of potential!"
+        description="Johnny's future research muscles - not yet flexed but full of potential!",
     )
 
     return additional_research_agent
@@ -174,7 +173,7 @@ def create_manager_agent() -> CodeAgent:
         managed_agents=[finder_agent, companies_house_agent, additional_research_agent],
         name="manager_agent",
         description="Johnny Bravo himself: coordinating agents and flexing analytical muscles",
-        planning_interval=3  # Plan after every 3 steps - Johnny likes to keep things moving!
+        planning_interval=3,  # Plan after every 3 steps - Johnny likes to keep things moving!
     )
 
     return manager_agent
@@ -208,20 +207,20 @@ def run_due_diligence(
     # Format the task instructions, including the MANAGER_AGENT_PROMPT
     task = f"""
     {MANAGER_AGENT_PROMPT}
-    
+
     Coordinate a comprehensive due diligence investigation on the UK company '{company_name}'.
     Focus on these research areas: {", ".join(research_areas)}.
 
     Follow this workflow:
     1. First use the finder_agent to gather information about the company from public web sources
        When using the finder_agent, instruct it with: "{FINDER_AGENT_PROMPT}"
-       
+
     2. Then use the companies_house_agent to gather comprehensive official data from the UK registry
        When using the companies_house_agent, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"
-       
+
     3. Also check with the additional_research_agent about future research capabilities
        When using the additional_research_agent, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
-       
+
     4. Finally, analyze all the information and compile a detailed due diligence report
 
     Your final report should include:
