@@ -26,6 +26,9 @@ from dude_diligence.tools.companies_house import (
     search_companies,
 )
 
+# Import tracing utilities
+from dude_diligence.utils.tracing import initialize_tracing
+
 __all__ = [
     # Main function
     "run_due_diligence",
@@ -42,4 +45,6 @@ __all__ = [
     "get_filing_history",
     "get_persons_with_significant_control",
     "get_charges",
+    # Tracing utilities
+    "initialize_tracing",
 ]
