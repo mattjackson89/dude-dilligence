@@ -13,17 +13,18 @@ from typing import Any
 from smolagents import ToolCallingAgent, DuckDuckGoSearchTool, tool, ToolCallingAgent
 
 from dude_diligence.tools.companies_house import (
-    explore_companies_house_api,
+    # explore_companies_house_api,
     get_charges,
     get_company_officers,
     get_company_profile,
-    get_endpoint_parameters,
+    # get_endpoint_parameters,
     get_filing_history,
     get_persons_with_significant_control,
-    get_schema_examples,
+    # get_schema_examples,
     perform_company_due_diligence,
     search_companies,
 )
+from dude_diligence.tools.linkedin import fetch_linkedin_data
 from dude_diligence.utils.model import get_agent_model
 from dude_diligence.utils.prompts import (
     ADDITIONAL_RESEARCH_AGENT_PROMPT,
@@ -38,8 +39,8 @@ logger = logging.getLogger(__name__)
 def create_finder_agent() -> ToolCallingAgent:
     """Create a specialized agent that focuses on finding company information from the web.
 
-    This agent uses web search tools to find information about companies
-    from public sources like websites, news articles, and business directories.
+    This agent uses web search tools and specialized data sources to find information about companies
+    from public sources like websites, news articles, LinkedIn, and business directories.
 
     Returns:
         ToolCallingAgent: A configured finder agent
@@ -48,9 +49,9 @@ def create_finder_agent() -> ToolCallingAgent:
 
     finder_agent = ToolCallingAgent(
         model=model,
-        tools=[DuckDuckGoSearchTool()],
+        tools=[DuckDuckGoSearchTool(), fetch_linkedin_data],
         name="finder_agent",
-        description="Johnny Bravo's web searcher: finding company info with style and flair",
+        description="Professional web research agent specializing in company information gathering",
     )
 
     return finder_agent
@@ -60,10 +61,10 @@ def create_companies_house_agent() -> ToolCallingAgent:
     """Create a specialized agent for retrieving Companies House data.
 
     This agent focuses on gathering comprehensive official data from
-    the Companies House registry.
+    the Companies House registry and providing detailed structured reports.
 
     Returns:
-        ToolCallingAgent: A configured Companies House data agent with Johnny's swagger
+        ToolCallingAgent: A configured Companies House data agent
     """
     model = get_agent_model()
 
@@ -77,12 +78,12 @@ def create_companies_house_agent() -> ToolCallingAgent:
             get_persons_with_significant_control,
             get_charges,
             perform_company_due_diligence,
-            explore_companies_house_api,
-            get_endpoint_parameters,
-            get_schema_examples,
+            # explore_companies_house_api,
+            # get_endpoint_parameters,
+            # get_schema_examples,
         ],
         name="companies_house_agent",
-        description="Johnny's official data collector: retrieving UK company data with flair",
+        description="Professional Companies House data specialist providing detailed structured reports",
     )
 
     return companies_house_agent
@@ -97,34 +98,34 @@ def get_research_capabilities() -> dict[str, Any]:
     will be added in future versions of the system.
 
     Returns:
-        Dict containing information about future capabilities with Johnny's optimism
+        Dict containing information about future capabilities
     """
     future_capabilities = {
         "social_media_analysis": {
             "status": "planned",
-            "description": "Analyze company presence on social media - Johnny style!",
-            "timeline": "In development - getting my hair ready for the cameras!",
+            "description": "Analyze company presence on social media platforms",
+            "timeline": "In development for next release",
         },
         "news_monitoring": {
             "status": "planned",
-            "description": "Monitor news articles about the company - the way Johnny monitors the ladies!",
-            "timeline": "Future enhancement - working on my pickup lines!",
+            "description": "Monitor news articles about the company for sentiment and key events",
+            "timeline": "Planned for future enhancement",
         },
         "financial_analysis": {
             "status": "planned",
-            "description": "Advanced financial statement analysis - Johnny knows numbers too, baby!",
-            "timeline": "Planned for next version - flexing my analytical muscles!",
+            "description": "Advanced financial statement analysis and trend visualization",
+            "timeline": "Planned for next version",
         },
         "competitor_analysis": {
             "status": "planned",
-            "description": "Analysis of company competitors - Johnny always checks out the competition!",
-            "timeline": "Future enhancement - gotta stay ahead of those other guys!",
+            "description": "Comprehensive competitive landscape analysis",
+            "timeline": "Future enhancement",
         },
     }
 
     return {
-        "current_status": "Just warming up, baby! *hair flip*",
-        "message": "This agent is a placeholder but will be as impressive as Johnny's biceps soon!",
+        "current_status": "Limited functionality in current version",
+        "message": "This agent is a placeholder with enhanced capabilities coming in future releases",
         "future_capabilities": future_capabilities,
     }
 
@@ -136,7 +137,7 @@ def create_additional_research_agent() -> ToolCallingAgent:
     research capabilities like social media analysis, sentiment analysis, etc.
 
     Returns:
-        ToolCallingAgent: A configured placeholder research agent with Johnny's optimism
+        ToolCallingAgent: A configured placeholder research agent
     """
     model = get_agent_model()
 
@@ -144,7 +145,7 @@ def create_additional_research_agent() -> ToolCallingAgent:
         model=model,
         tools=[get_research_capabilities],
         name="additional_research_agent",
-        description="Johnny's future research muscles - not yet flexed but full of potential!",
+        description="Professional research agent with expanded capabilities in development",
     )
 
     return additional_research_agent
@@ -154,7 +155,7 @@ def create_manager_agent() -> ToolCallingAgent:
     """Create a manager agent that coordinates the specialized agents.
 
     This agent delegates tasks to specialized agents and compiles their
-    findings into a comprehensive due diligence report.
+    findings into a comprehensive due diligence report with Johnny Bravo's style.
 
     Returns:
         ToolCallingAgent: A configured manager agent with Johnny's leadership swagger
@@ -172,7 +173,7 @@ def create_manager_agent() -> ToolCallingAgent:
         tools=[],  # Manager doesn't need direct tools
         managed_agents=[finder_agent, companies_house_agent, additional_research_agent],
         name="manager_agent",
-        description="Johnny Bravo himself: coordinating agents and flexing analytical muscles",
+        description="Johnny Bravo himself: coordinating agents and compiling comprehensive due diligence reports with style",
         planning_interval=3,  # Plan after every 3 steps - Johnny likes to keep things moving!
     )
 
@@ -229,7 +230,7 @@ def run_due_diligence(
             research_areas = ["Basic Info"]
 
         # Log the start of the process
-        logger.info(f"Johnny Bravo is checking out UK company '{company_name}' *hair flip*")
+        logger.info(f"Starting comprehensive due diligence for '{company_name}'")
 
         # Create the manager agent
         manager_agent = create_manager_agent()
@@ -241,29 +242,17 @@ def run_due_diligence(
         Coordinate a comprehensive due diligence investigation on the UK company '{company_name}'.
         Focus on these research areas: {", ".join(research_areas)}.
 
-        Follow this workflow:
-        1. First use the finder_agent to gather information about the company from public web sources
-           When using the finder_agent, instruct it with: "{FINDER_AGENT_PROMPT}"
+        When using the finder_agent, instruct it with: "{FINDER_AGENT_PROMPT}"
+        When using the companies_house_agent, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"  
+        When using the additional_research_agent, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
 
-        2. Then use the companies_house_agent to gather comprehensive official data from the UK registry
-           When using the companies_house_agent, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"
+        IMPORTANT: This is an iterative investigation. After receiving information:
+        1. Analyze what you've learned
+        2. Identify any gaps or areas needing further exploration
+        3. Request additional information from any agent as needed
+        4. Only compile your final report when you have gathered all necessary information
 
-        3. Also check with the additional_research_agent about future research capabilities
-           When using the additional_research_agent, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
-
-        4. Finally, analyze all the information and compile a detailed due diligence report
-
-        Your final report should include:
-        - Executive summary with key findings (with Johnny's enthusiasm)
-        - Company overview and structure (delivered with confidence)
-        - Leadership analysis (with comments on which executives have "style")
-        - Financial assessment (presented with Johnny-style flair)
-        - Risk analysis and opportunities (with Johnny's optimism)
-        - Suggestions for future research (based on the additional_research_agent's capabilities)
-
-        Return the final report in professional markdown format with Johnny Bravo's unique flair,
-        including occasional catchphrases like "Hey there, pretty data!", "Oh mama!", and "*does hair flip*"
-        action markers when presenting particularly important findings.
+        Ensure your final report is comprehensive, well-structured with tables, and follows all the guidelines in the prompt.
         """
         span.set_attribute("input.value", task)
 
