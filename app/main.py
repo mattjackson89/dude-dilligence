@@ -3,6 +3,12 @@
 As Johnny Bravo would say: "Enough talk, let's launch this app, baby!"
 """
 
+from dude_diligence.utils.tracing import initialize_tracing
+from opentelemetry import trace
+
+_ = initialize_tracing(force=True)
+tracer = trace.get_tracer("gradio-tracing")
+
 import logging
 
 from app.ui import create_ui

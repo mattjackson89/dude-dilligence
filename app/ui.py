@@ -5,6 +5,8 @@ Johnny Bravo's stylish UI for company research.
 """
 
 import gradio as gr
+import uuid
+import logging
 
 from dude_diligence import run_due_diligence
 from dude_diligence.agents import create_manager_agent
@@ -13,6 +15,8 @@ from dude_diligence.agents import create_manager_agent
 JOHNNY_YELLOW = "#FFD700"
 JOHNNY_BLACK = "#000000"
 JOHNNY_BLUE = "#1E90FF"
+
+logger = logging.getLogger(__name__)
 
 
 class ReportContextAgent:
@@ -23,6 +27,7 @@ class ReportContextAgent:
         self.report = ""
         self.company_name = ""
         self.name = "Johnny Bravo"  # Add name attribute for GradioUI compatibility
+        self.session_id = str(uuid.uuid4())
 
     def set_report_context(self, report, company_name):
         """Set the report context for future interactions."""
@@ -34,22 +39,46 @@ class ReportContextAgent:
         if not self.report:
             return "No report has been generated yet. Please run due diligence first."
 
-        prompt = f"""
-        You are Johnny Bravo, a charismatic and knowledgeable assistant who helps with company research.
-        You have completed a due diligence report for {self.company_name}.
+        from opentelemetry import trace
+        tracer = trace.get_tracer("due-diligence-tracing")
+        with tracer.start_as_current_span("Agent-Chat-Interaction") as span:
+            # Add attributes to the trace that match our due diligence naming pattern
+            span.set_attribute("langfuse.session.id", self.session_id)
+            span.set_attribute("langfuse.tags", ["chat", "johnny-bravo"])
+            span.set_attribute("company.name", self.company_name)
+            
+            # Add input/output attributes for consistency with Due-Diligence-Process
+            span.set_attribute("input.value", user_message)
 
-        Here is the report for context:
-        {self.report}
+            prompt = f"""
+            You are Johnny Bravo, a charismatic and knowledgeable assistant who helps with company research.
+            You have completed a due diligence report for {self.company_name}.
 
-        The user's question is: {user_message}
+            Here is the report for context:
+            {self.report}
 
-        Answer their question based on this report. If information isn't in the report,
-        explain that it wasn't covered in the initial research but you can help look into it.
+            The user's question is: {user_message}
 
-        Always maintain Johnny Bravo's confident and slightly flamboyant personality.
-        """
+            Answer their question based on this report. If information isn't in the report,
+            explain that it wasn't covered in the initial research but you can help look into it.
 
-        return self.base_agent.run(prompt)
+            Always maintain Johnny Bravo's confident and slightly flamboyant personality.
+            """
+
+            try:
+                response = self.base_agent.run(prompt)
+                # Add output attributes like in due diligence
+                span.set_attribute("status", "success")
+                span.set_attribute("output.value", response)
+                return response
+            except Exception as e:
+                # Record error in trace
+                span.set_attribute("status", "error") 
+                span.set_attribute("error.message", str(e))
+                # Log the error
+                logger.error(f"Error in chat interaction: {str(e)}")
+                # Return an error message
+                return f"Whoops! Something went wrong. Can you try asking differently?"
 
 
 def create_ui():
@@ -118,6 +147,8 @@ def create_ui():
                         None,
                         "https://www.clipartmax.com/png/middle/112-1127678_johnny-bravo-logo-png-transparent-johnny-bravo.png",
                     ),
+                    # type="messages", app-1  | gradio.exceptions.Error: "Data incompatible with messages format. Each message should be a dictionary with 'role' and 'content' keys or a ChatMessage object."
+
                 )
                 chat_input = gr.Textbox(
                     placeholder="Ask Johnny about the report...", label="Your message"

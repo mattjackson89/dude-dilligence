@@ -9,11 +9,25 @@ import logging
 from typing import Any
 
 from smolagents import tool
+from opentelemetry import trace
 
 logger = logging.getLogger(__name__)
 
 # Placeholder for actual API implementation
 # In a real implementation, this would use LinkedIn API or a proxy service
+
+
+def set_tool_attributes(name: str, display_name: str):
+    """Set custom attributes on the current span for better tracing in Langfuse.
+    
+    Args:
+        name: The technical name of the tool
+        display_name: A friendly display name for the tool in trace visualizations
+    """
+    current_span = trace.get_current_span()
+    current_span.set_attribute("tool.name", name)
+    current_span.set_attribute("tool.display_name", display_name)
+    current_span.set_attribute("tool.type", "linkedin_tool")
 
 
 @tool
@@ -32,6 +46,8 @@ def fetch_linkedin_data(
         fetch_employees: Whether to fetch employee data
         fetch_posts: Whether to fetch recent company posts
     """
+    set_tool_attributes("fetch_linkedin_data", "LinkedIn Company Info")
+    
     logger.info(f"Fetching LinkedIn data for {company_name}")
     logger.warning("This is a placeholder implementation with mock data")
 

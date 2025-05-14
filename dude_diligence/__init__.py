@@ -5,8 +5,10 @@ As Johnny would say, "Heyyy there, Pretty Company Data!"
 
 __version__ = "0.1.0"
 
-# Remove single agent imports
-# Import multi-agent functionality
+# Import tracing utilities first, but DO NOT initialize yet
+from dude_diligence.utils.tracing import initialize_tracing
+
+# Import other modules
 from dude_diligence.agents import (
     create_additional_research_agent,
     create_companies_house_agent,
@@ -25,9 +27,6 @@ from dude_diligence.tools.companies_house import (
     get_persons_with_significant_control,
     search_companies,
 )
-
-# Import tracing utilities
-from dude_diligence.utils.tracing import initialize_tracing
 
 __all__ = [
     # Main function

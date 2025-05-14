@@ -20,6 +20,7 @@ from tenacity import (
     wait_exponential,
     wait_fixed,
 )
+from opentelemetry import trace
 
 # Import schema utilities
 from dude_diligence.utils.companies_house_utils import (
@@ -32,6 +33,19 @@ logger = logging.getLogger(__name__)
 # Get API key from environment variables
 API_KEY = os.getenv("COMPANIES_HOUSE_API_KEY", "")
 BASE_URL = "https://api.company-information.service.gov.uk"
+
+
+def set_tool_attributes(name: str, display_name: str):
+    """Set custom attributes on the current span for better tracing in Langfuse.
+    
+    Args:
+        name: The technical name of the tool
+        display_name: A friendly display name for the tool in trace visualizations
+    """
+    current_span = trace.get_current_span()
+    current_span.set_attribute("tool.name", name)
+    current_span.set_attribute("tool.display_name", display_name)
+    current_span.set_attribute("tool.type", "companies_house_tool")
 
 
 def _get_auth_header():
@@ -92,6 +106,8 @@ def search_companies(company_name: str, items_per_page: int = 20) -> dict[str, A
         company_name: Name or partial name of the UK company to search for
         items_per_page: Number of results to return per page (max 100)
     """
+    set_tool_attributes("search_companies", "Companies House Search")
+    
     logger.info(f"Searching for UK companies matching '{company_name}'")
 
     url = f"{BASE_URL}/search/companies"
@@ -136,6 +152,8 @@ def get_company_profile(company_name: str, search_first: bool = True) -> dict[st
         company_name: Name or number of the UK company
         search_first: Whether to search for the company first to get the company number
     """
+    set_tool_attributes("get_company_profile", "Companies House Profile")
+    
     logger.info(f"Getting profile for UK company {company_name} from Companies House")
 
     company_number = company_name
@@ -171,6 +189,8 @@ def get_company_officers(company_number: str, items_per_page: int = 20) -> dict[
         company_number: The Companies House company number
         items_per_page: Number of results to return per page (max 100)
     """
+    set_tool_attributes("get_company_officers", "Companies House Officers")
+    
     logger.info(f"Getting officers for company number {company_number}")
 
     url = f"{BASE_URL}/company/{company_number}/officers"
@@ -190,6 +210,8 @@ def get_filing_history(company_number: str, items_per_page: int = 20) -> dict[st
         company_number: The Companies House company number
         items_per_page: Number of results to return per page (max 100)
     """
+    set_tool_attributes("get_filing_history", "Companies House Filing History")
+    
     logger.info(f"Getting filing history for company number {company_number}")
 
     url = f"{BASE_URL}/company/{company_number}/filing-history"
@@ -211,6 +233,8 @@ def get_persons_with_significant_control(
         company_number: The Companies House company number
         items_per_page: Number of results to return per page (max 100)
     """
+    set_tool_attributes("get_persons_with_significant_control", "Companies House PSC")
+    
     logger.info(f"Getting PSCs for company number {company_number}")
 
     url = f"{BASE_URL}/company/{company_number}/persons-with-significant-control"
@@ -230,6 +254,8 @@ def get_charges(company_number: str, items_per_page: int = 20) -> dict[str, Any]
         company_number: The Companies House company number
         items_per_page: Number of results to return per page (max 100)
     """
+    set_tool_attributes("get_charges", "Companies House Charges")
+    
     logger.info(f"Getting charges for company number {company_number}")
 
     url = f"{BASE_URL}/company/{company_number}/charges"
@@ -256,6 +282,8 @@ def perform_company_due_diligence(
                           Options: ["profile", "officers", "filing_history", "pscs", "charges"]
                           If None, all sections are included
     """
+    set_tool_attributes("perform_company_due_diligence", "Companies House Due Diligence")
+    
     logger.info(f"Performing due diligence on UK company '{company_name}'")
 
     # Default to including all sections if not specified
@@ -306,6 +334,8 @@ def explore_companies_house_api() -> dict[str, Any]:
     This tool returns a list of all available endpoints in the Companies House API,
     along with their descriptions. Use this to understand what data you can retrieve.
     """
+    set_tool_attributes("explore_companies_house_api", "Companies House API Explorer")
+    
     logger.info("Exploring Companies House API schema")
 
     endpoints = get_endpoint_definitions()
@@ -337,6 +367,8 @@ def get_endpoint_parameters(endpoint_name: str) -> dict[str, Any]:
     Args:
         endpoint_name: Name of the endpoint to get details for (e.g., "search-companies")
     """
+    set_tool_attributes("get_endpoint_parameters", "Companies House API Parameters")
+    
     logger.info(f"Getting parameter details for endpoint: {endpoint_name}")
 
     endpoints = get_endpoint_definitions()
@@ -389,6 +421,8 @@ def get_schema_examples(endpoint_name: str) -> dict[str, Any]:
     Args:
         endpoint_name: Name of the endpoint to get examples for (e.g., "search-companies")
     """
+    set_tool_attributes("get_schema_examples", "Companies House API Examples")
+    
     logger.info(f"Getting examples for endpoint: {endpoint_name}")
 
     schema = load_schema()
