@@ -8,27 +8,11 @@ As Johnny Bravo would say: "Hey there, Pretty Companies! Let me check you out!" 
 """
 
 import logging
-from datetime import datetime
-from typing import Any
-from uuid import uuid4
 import json
-
+from typing import Any
 from smolagents import ToolCallingAgent, DuckDuckGoSearchTool, tool, ToolCallingAgent
 
-from dude_diligence.models import (
-    CompanyBasicInfo,
-    CorporateStructure,
-    DueDiligenceReport,
-    FinancialInfo,
-    LeadershipInfo,
-    LegalInfo,
-    MarketInfo,
-    OperationalInfo,
-    OwnershipInfo,
-    ReportMetadata,
-    RiskAssessment,
-    ScoringSystem,
-)
+
 from dude_diligence.tools.companies_house import (
     explore_companies_house_api,
     get_charges,
@@ -101,7 +85,6 @@ def create_companies_house_agent() -> ToolCallingAgent:
 
     return companies_house_agent
 
-
 # Create a placeholder tool for the additional research agent
 @tool
 def get_research_capabilities() -> dict[str, Any]:
@@ -142,7 +125,6 @@ def get_research_capabilities() -> dict[str, Any]:
         "future_capabilities": future_capabilities,
     }
 
-
 def create_additional_research_agent() -> ToolCallingAgent:
     """Create a placeholder agent for future research capabilities.
 
@@ -164,165 +146,29 @@ def create_additional_research_agent() -> ToolCallingAgent:
     return additional_research_agent
 
 
-@tool
-def get_recommendation_images() -> dict[str, str]:
-    """Get the available recommendation images.
-    
-    Returns:
-        Dict containing paths to the available recommendation images:
-        - amazing: For companies with excellent prospects
-        - good: For companies with solid performance
-        - dubious: For companies with concerning issues
-    """
-    return {
-        "amazing": "app/images/amazing.gif",
-        "good": "app/images/good.gif",
-        "dubious": "app/images/dubious.gif"
-    }
-
-def calculate_company_scores(report: DueDiligenceReport) -> ScoringSystem:
-    """Calculate comprehensive scores for a company based on the due diligence report.
-    
-    This function evaluates different aspects of the company and assigns scores
-    based on the available information. Each score is between 0 and 1, where:
-    - 0 represents high risk/poor performance
-    - 1 represents low risk/excellent performance
-    
-    Args:
-        report: The due diligence report containing company information
-        
-    Returns:
-        ScoringSystem: A scoring system object with calculated scores
-    """
-    # Initialize scores
-    scores = ScoringSystem()
-    
-    # Calculate financial health score
-    if report.financial_info:
-        # Consider factors like profitability, debt levels, cash flow
-        financial_factors = []
-        if hasattr(report.financial_info, 'profitability'):
-            financial_factors.append(report.financial_info.profitability)
-        if hasattr(report.financial_info, 'debt_levels'):
-            financial_factors.append(1 - report.financial_info.debt_levels)  # Invert debt levels
-        if hasattr(report.financial_info, 'cash_flow'):
-            financial_factors.append(report.financial_info.cash_flow)
-        
-        scores.financial_health_score = sum(financial_factors) / len(financial_factors) if financial_factors else 0.5
-    
-    # Calculate operational risk score
-    if report.operational_info:
-        # Consider factors like operational efficiency, business continuity
-        operational_factors = []
-        if hasattr(report.operational_info, 'operational_efficiency'):
-            operational_factors.append(report.operational_info.operational_efficiency)
-        if hasattr(report.operational_info, 'business_continuity'):
-            operational_factors.append(report.operational_info.business_continuity)
-        
-        scores.operational_risk_score = sum(operational_factors) / len(operational_factors) if operational_factors else 0.5
-    
-    # Calculate legal compliance score
-    if report.legal_info:
-        # Consider factors like regulatory compliance, legal disputes
-        legal_factors = []
-        if hasattr(report.legal_info, 'regulatory_compliance'):
-            legal_factors.append(report.legal_info.regulatory_compliance)
-        if hasattr(report.legal_info, 'legal_disputes'):
-            legal_factors.append(1 - report.legal_info.legal_disputes)  # Invert legal disputes
-        
-        scores.legal_compliance_score = sum(legal_factors) / len(legal_factors) if legal_factors else 0.5
-    
-    # Calculate market position score
-    if report.market_info:
-        # Consider factors like market share, competitive position
-        market_factors = []
-        if hasattr(report.market_info, 'market_share'):
-            market_factors.append(report.market_info.market_share)
-        if hasattr(report.market_info, 'competitive_position'):
-            market_factors.append(report.market_info.competitive_position)
-        
-        scores.market_position_score = sum(market_factors) / len(market_factors) if market_factors else 0.5
-    
-    # Calculate leadership quality score
-    if report.leadership:
-        # Consider factors like experience, track record
-        leadership_factors = []
-        if hasattr(report.leadership, 'experience'):
-            leadership_factors.append(report.leadership.experience)
-        if hasattr(report.leadership, 'track_record'):
-            leadership_factors.append(report.leadership.track_record)
-        
-        scores.leadership_quality_score = sum(leadership_factors) / len(leadership_factors) if leadership_factors else 0.5
-    
-    # Calculate overall score (weighted average)
-    weights = {
-        'financial_health': 0.3,
-        'operational_risk': 0.2,
-        'legal_compliance': 0.2,
-        'market_position': 0.15,
-        'leadership_quality': 0.15
-    }
-    
-    scores.overall_score = (
-        scores.financial_health_score * weights['financial_health'] +
-        scores.operational_risk_score * weights['operational_risk'] +
-        scores.legal_compliance_score * weights['legal_compliance'] +
-        scores.market_position_score * weights['market_position'] +
-        scores.leadership_quality_score * weights['leadership_quality']
-    )
-    
-    # Calculate confidence level based on data completeness
-    data_points = sum(1 for score in [
-        scores.financial_health_score,
-        scores.operational_risk_score,
-        scores.legal_compliance_score,
-        scores.market_position_score,
-        scores.leadership_quality_score
-    ] if score > 0)
-    
-    scores.confidence_level = data_points / 5.0
-    
-    # Generate score explanation
-    score_explanations = []
-    if scores.financial_health_score > 0:
-        score_explanations.append(f"Financial Health: {scores.financial_health_score:.2f}")
-    if scores.operational_risk_score > 0:
-        score_explanations.append(f"Operational Risk: {scores.operational_risk_score:.2f}")
-    if scores.legal_compliance_score > 0:
-        score_explanations.append(f"Legal Compliance: {scores.legal_compliance_score:.2f}")
-    if scores.market_position_score > 0:
-        score_explanations.append(f"Market Position: {scores.market_position_score:.2f}")
-    if scores.leadership_quality_score > 0:
-        score_explanations.append(f"Leadership Quality: {scores.leadership_quality_score:.2f}")
-    
-    scores.score_explanation = "\n".join(score_explanations)
-    
-    return scores
-
 def create_manager_agent() -> ToolCallingAgent:
-    """Create a manager agent that coordinates the specialized agents.
+    """Create a manager agent to coordinate the other specialized agents.
 
-    This agent delegates tasks to specialized agents and compiles their
-    findings into a comprehensive due diligence report with Johnny Bravo's style.
+    This manager agent orchestrates the overall due diligence process by delegating
+    tasks to specialized agents and aggregating their outputs into a comprehensive report.
 
     Returns:
-        ToolCallingAgent: A configured manager agent with Johnny's leadership swagger
+        ToolCallingAgent: A configured manager agent
     """
     model = get_agent_model()
 
-    # Create the specialized agents
     finder_agent = create_finder_agent()
     companies_house_agent = create_companies_house_agent()
-    additional_research_agent = create_additional_research_agent()
 
-    # Create the manager agent with the specialized agents and tools
     manager_agent = ToolCallingAgent(
         model=model,
-        tools=[],
-        managed_agents=[finder_agent, companies_house_agent, additional_research_agent],
+        tools=[
+            finder_agent,
+            companies_house_agent,
+        ],
+        system_prompt=MANAGER_AGENT_PROMPT,
         name="manager_agent",
-        description="Johnny Bravo himself: coordinating agents and compiling comprehensive due diligence reports with style",
-        planning_interval=3,
+        description="Coordinating manager for due diligence agents",
     )
 
     return manager_agent
@@ -370,7 +216,6 @@ def run_due_diligence(company_name: str) -> dict:
             parsed_result = json.loads(result)
             
             if parsed_result["image"] not in ["amazing.gif", "good.gif", "dubious.gif"]:
-                parsed_result["image"] = "dubious.gif"  # Default to dubious if invalid
                 parsed_result["image"] = "dubious.gif"
                 
                 

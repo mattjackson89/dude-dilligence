@@ -142,69 +142,15 @@ class ReportMetadata(BaseModel):
     future_research_suggestions: List[str] = Field(default_factory=list)
 
 
-class ScoringSystem:
+class ScoringSystem(BaseModel):
     """Scoring system for company evaluation."""
-    
-    def __init__(
-        self,
-        financial_health_score: float = 0.0,
-        operational_risk_score: float = 0.0,
-        legal_compliance_score: float = 0.0,
-        market_position_score: float = 0.0,
-        leadership_quality_score: float = 0.0,
-        overall_score: float = 0.0,
-        confidence_level: float = 0.0,
-        score_explanation: str = "",
-    ):
-        self.financial_health_score = financial_health_score
-        self.operational_risk_score = operational_risk_score
-        self.legal_compliance_score = legal_compliance_score
-        self.market_position_score = market_position_score
-        self.leadership_quality_score = leadership_quality_score
-        self.overall_score = overall_score
-        self.confidence_level = confidence_level
-        self.score_explanation = score_explanation
+    financial_health_score: float = 0.0
+    operational_risk_score: float = 0.0
+    legal_compliance_score: float = 0.0
+    market_position_score: float = 0.0
+    leadership_quality_score: float = 0.0
+    overall_score: float = 0.0
+    confidence_level: float = 0.0
+    score_explanation: str = ""
 
 
-class DueDiligenceReport:
-    """Comprehensive due diligence report for a company."""
-    
-    def __init__(
-        self,
-        report_id: str,
-        generation_date: datetime,
-        company_basic_info: CompanyBasicInfo,
-        corporate_structure: CorporateStructure,
-        leadership: LeadershipInfo,
-        ownership: OwnershipInfo,
-        financial_info: FinancialInfo,
-        legal_info: LegalInfo,
-        operational_info: OperationalInfo,
-        risk_assessment: RiskAssessment,
-        market_info: MarketInfo,
-        executive_summary: str,
-        key_findings: list[str],
-        recommendations: list[str],
-        raw_markdown: str,
-        data_sources: list[str],
-        metadata: ReportMetadata,
-        scoring: ScoringSystem = None,
-    ):
-        self.report_id = report_id
-        self.generation_date = generation_date
-        self.company_basic_info = company_basic_info
-        self.corporate_structure = corporate_structure
-        self.leadership = leadership
-        self.ownership = ownership
-        self.financial_info = financial_info
-        self.legal_info = legal_info
-        self.operational_info = operational_info
-        self.risk_assessment = risk_assessment
-        self.market_info = market_info
-        self.executive_summary = executive_summary
-        self.key_findings = key_findings
-        self.recommendations = recommendations
-        self.raw_markdown = raw_markdown
-        self.data_sources = data_sources
-        self.metadata = metadata
-        self.scoring = scoring or ScoringSystem() 

@@ -10,10 +10,9 @@ from dude_diligence.utils.tracing import initialize_tracing
 
 # Import other modules
 from dude_diligence.agents import (
-    create_additional_research_agent,
     create_companies_house_agent,
-    create_finder_agent,
     create_manager_agent,
+    create_finder_agent,
     run_due_diligence,
     visualize_agent_structure,
 )
@@ -22,7 +21,6 @@ from dude_diligence.agents import (
 from dude_diligence.models import (
     CompanyBasicInfo,
     CorporateStructure,
-    DueDiligenceReport,
     FinancialInfo,
     LeadershipInfo,
     LegalInfo,
@@ -50,7 +48,6 @@ __all__ = [
     "create_manager_agent",
     "create_finder_agent",
     "create_companies_house_agent",
-    "create_additional_research_agent",
     "visualize_agent_structure",
     # Core tools
     "search_companies",
@@ -64,7 +61,6 @@ __all__ = [
     # Models
     "CompanyBasicInfo",
     "CorporateStructure",
-    "DueDiligenceReport",
     "FinancialInfo",
     "LeadershipInfo",
     "LegalInfo",
