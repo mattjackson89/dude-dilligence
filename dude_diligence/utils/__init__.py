@@ -7,9 +7,6 @@ import logging
 
 from dude_diligence.utils.parsers import parse_response
 from dude_diligence.utils.prompts import (
-    ADDITIONAL_RESEARCH_AGENT_PROMPT,
-    COMPANIES_HOUSE_AGENT_PROMPT,
-    FINDER_AGENT_PROMPT,
     MANAGER_AGENT_PROMPT,
 )
 
@@ -41,9 +38,6 @@ def setup_logging(logger_name: str | None = None, level: int = logging.INFO) -> 
 
 
 __all__ = [
-    "FINDER_AGENT_PROMPT",
-    "COMPANIES_HOUSE_AGENT_PROMPT",
-    "ADDITIONAL_RESEARCH_AGENT_PROMPT",
     "MANAGER_AGENT_PROMPT",
     "parse_response",
     "setup_logging",

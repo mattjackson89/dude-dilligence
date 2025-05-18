@@ -8,10 +8,27 @@ As Johnny Bravo would say: "Hey there, Pretty Companies! Let me check you out!" 
 """
 
 import logging
+from datetime import datetime
 from typing import Any
+from uuid import uuid4
+import json
 
 from smolagents import ToolCallingAgent, DuckDuckGoSearchTool, tool, ToolCallingAgent
 
+from dude_diligence.models import (
+    CompanyBasicInfo,
+    CorporateStructure,
+    DueDiligenceReport,
+    FinancialInfo,
+    LeadershipInfo,
+    LegalInfo,
+    MarketInfo,
+    OperationalInfo,
+    OwnershipInfo,
+    ReportMetadata,
+    RiskAssessment,
+    ScoringSystem,
+)
 from dude_diligence.tools.companies_house import (
     explore_companies_house_api,
     get_charges,
@@ -26,9 +43,6 @@ from dude_diligence.tools.companies_house import (
 )
 from dude_diligence.utils.model import get_agent_model
 from dude_diligence.utils.prompts import (
-    ADDITIONAL_RESEARCH_AGENT_PROMPT,
-    COMPANIES_HOUSE_AGENT_PROMPT,
-    FINDER_AGENT_PROMPT,
     MANAGER_AGENT_PROMPT,
 )
 
@@ -150,6 +164,141 @@ def create_additional_research_agent() -> ToolCallingAgent:
     return additional_research_agent
 
 
+@tool
+def get_recommendation_images() -> dict[str, str]:
+    """Get the available recommendation images.
+    
+    Returns:
+        Dict containing paths to the available recommendation images:
+        - amazing: For companies with excellent prospects
+        - good: For companies with solid performance
+        - dubious: For companies with concerning issues
+    """
+    return {
+        "amazing": "app/images/amazing.gif",
+        "good": "app/images/good.gif",
+        "dubious": "app/images/dubious.gif"
+    }
+
+def calculate_company_scores(report: DueDiligenceReport) -> ScoringSystem:
+    """Calculate comprehensive scores for a company based on the due diligence report.
+    
+    This function evaluates different aspects of the company and assigns scores
+    based on the available information. Each score is between 0 and 1, where:
+    - 0 represents high risk/poor performance
+    - 1 represents low risk/excellent performance
+    
+    Args:
+        report: The due diligence report containing company information
+        
+    Returns:
+        ScoringSystem: A scoring system object with calculated scores
+    """
+    # Initialize scores
+    scores = ScoringSystem()
+    
+    # Calculate financial health score
+    if report.financial_info:
+        # Consider factors like profitability, debt levels, cash flow
+        financial_factors = []
+        if hasattr(report.financial_info, 'profitability'):
+            financial_factors.append(report.financial_info.profitability)
+        if hasattr(report.financial_info, 'debt_levels'):
+            financial_factors.append(1 - report.financial_info.debt_levels)  # Invert debt levels
+        if hasattr(report.financial_info, 'cash_flow'):
+            financial_factors.append(report.financial_info.cash_flow)
+        
+        scores.financial_health_score = sum(financial_factors) / len(financial_factors) if financial_factors else 0.5
+    
+    # Calculate operational risk score
+    if report.operational_info:
+        # Consider factors like operational efficiency, business continuity
+        operational_factors = []
+        if hasattr(report.operational_info, 'operational_efficiency'):
+            operational_factors.append(report.operational_info.operational_efficiency)
+        if hasattr(report.operational_info, 'business_continuity'):
+            operational_factors.append(report.operational_info.business_continuity)
+        
+        scores.operational_risk_score = sum(operational_factors) / len(operational_factors) if operational_factors else 0.5
+    
+    # Calculate legal compliance score
+    if report.legal_info:
+        # Consider factors like regulatory compliance, legal disputes
+        legal_factors = []
+        if hasattr(report.legal_info, 'regulatory_compliance'):
+            legal_factors.append(report.legal_info.regulatory_compliance)
+        if hasattr(report.legal_info, 'legal_disputes'):
+            legal_factors.append(1 - report.legal_info.legal_disputes)  # Invert legal disputes
+        
+        scores.legal_compliance_score = sum(legal_factors) / len(legal_factors) if legal_factors else 0.5
+    
+    # Calculate market position score
+    if report.market_info:
+        # Consider factors like market share, competitive position
+        market_factors = []
+        if hasattr(report.market_info, 'market_share'):
+            market_factors.append(report.market_info.market_share)
+        if hasattr(report.market_info, 'competitive_position'):
+            market_factors.append(report.market_info.competitive_position)
+        
+        scores.market_position_score = sum(market_factors) / len(market_factors) if market_factors else 0.5
+    
+    # Calculate leadership quality score
+    if report.leadership:
+        # Consider factors like experience, track record
+        leadership_factors = []
+        if hasattr(report.leadership, 'experience'):
+            leadership_factors.append(report.leadership.experience)
+        if hasattr(report.leadership, 'track_record'):
+            leadership_factors.append(report.leadership.track_record)
+        
+        scores.leadership_quality_score = sum(leadership_factors) / len(leadership_factors) if leadership_factors else 0.5
+    
+    # Calculate overall score (weighted average)
+    weights = {
+        'financial_health': 0.3,
+        'operational_risk': 0.2,
+        'legal_compliance': 0.2,
+        'market_position': 0.15,
+        'leadership_quality': 0.15
+    }
+    
+    scores.overall_score = (
+        scores.financial_health_score * weights['financial_health'] +
+        scores.operational_risk_score * weights['operational_risk'] +
+        scores.legal_compliance_score * weights['legal_compliance'] +
+        scores.market_position_score * weights['market_position'] +
+        scores.leadership_quality_score * weights['leadership_quality']
+    )
+    
+    # Calculate confidence level based on data completeness
+    data_points = sum(1 for score in [
+        scores.financial_health_score,
+        scores.operational_risk_score,
+        scores.legal_compliance_score,
+        scores.market_position_score,
+        scores.leadership_quality_score
+    ] if score > 0)
+    
+    scores.confidence_level = data_points / 5.0
+    
+    # Generate score explanation
+    score_explanations = []
+    if scores.financial_health_score > 0:
+        score_explanations.append(f"Financial Health: {scores.financial_health_score:.2f}")
+    if scores.operational_risk_score > 0:
+        score_explanations.append(f"Operational Risk: {scores.operational_risk_score:.2f}")
+    if scores.legal_compliance_score > 0:
+        score_explanations.append(f"Legal Compliance: {scores.legal_compliance_score:.2f}")
+    if scores.market_position_score > 0:
+        score_explanations.append(f"Market Position: {scores.market_position_score:.2f}")
+    if scores.leadership_quality_score > 0:
+        score_explanations.append(f"Leadership Quality: {scores.leadership_quality_score:.2f}")
+    
+    scores.score_explanation = "\n".join(score_explanations)
+    
+    return scores
+
 def create_manager_agent() -> ToolCallingAgent:
     """Create a manager agent that coordinates the specialized agents.
 
@@ -166,57 +315,34 @@ def create_manager_agent() -> ToolCallingAgent:
     companies_house_agent = create_companies_house_agent()
     additional_research_agent = create_additional_research_agent()
 
-    # Create the manager agent with the specialized agents
+    # Create the manager agent with the specialized agents and tools
     manager_agent = ToolCallingAgent(
         model=model,
-        tools=[],  # Manager doesn't need direct tools
+        tools=[],
         managed_agents=[finder_agent, companies_house_agent, additional_research_agent],
         name="manager_agent",
         description="Johnny Bravo himself: coordinating agents and compiling comprehensive due diligence reports with style",
-        planning_interval=3,  # Plan after every 3 steps - Johnny likes to keep things moving!
+        planning_interval=3,
     )
 
     return manager_agent
 
 
-def run_due_diligence(
-    company_name: str,
-    research_areas: list[str] | None = None,
-) -> str:
-    """Run a multi-agent due diligence process for a UK company.
-
-    This function coordinates multiple specialized agents to perform
-    comprehensive due diligence on a UK company.
-
-    Args:
-        company_name: Name of the UK company to research (the "pretty lady" of the hour)
-        research_areas: Specific areas to research (Johnny's pickup lines)
-
-    Returns:
-        str: Formatted markdown report with research findings and Johnny's commentary
-    """
-    # Get the tracer
+def run_due_diligence(company_name: str) -> dict:
+    """Run a multi-agent due diligence process for a UK company and return a structured report."""
     from opentelemetry import trace
     tracer = trace.get_tracer("due-diligence-tracing")
-    
-    # Safely get the session ID if available
     session_id = None
     try:
         current_span = trace.get_current_span()
-        # Check if the span is valid and has the attribute
         if current_span and hasattr(current_span, 'get_attribute'):
             session_id = current_span.get_attribute("session.id")
     except Exception as e:
-        # Fail silently if there's an issue with span access
         logger.warning(f"Could not access current span: {str(e)}")
     
     with tracer.start_as_current_span("Due-Diligence-Process") as span:
         # Add core attributes to the trace
         span.set_attribute("input.company_name", company_name)
-        
-        # Only add research_areas if not None
-        if research_areas:
-            span.set_attribute("input.research_areas", ", ".join(research_areas))
         
         # Set a simplified input value
         span.set_attribute("input.value", f"Company: {company_name}")
@@ -224,74 +350,48 @@ def run_due_diligence(
         # Propagate the session ID if it was set in the parent context
         if session_id:
             span.set_attribute("langfuse.session.id", session_id)
-        
-        if research_areas is None:
-            research_areas = ["Basic Info"]
 
         # Log the start of the process
-        logger.info(f"Johnny Bravo is checking out UK company '{company_name}' *hair flip*")
+        logger.info(f"Starting due diligence investigation for UK company '{company_name}'")
 
         # Create the manager agent
         manager_agent = create_manager_agent()
 
-        # Format the task instructions, including the MANAGER_AGENT_PROMPT
-        task = f"""
+        # Task to collect data and generate report
+        task = f"""Perform a comprehensive due diligence investigation on the UK company '{company_name}'
+
         {MANAGER_AGENT_PROMPT}
-
-        Coordinate a comprehensive due diligence investigation on the UK company '{company_name}'.
-        Focus on these research areas: {", ".join(research_areas)}.
-
-        Follow this workflow:
-        1. First use the finder_agent to gather information about the company from public web sources
-           When using the finder_agent, instruct it with: "{FINDER_AGENT_PROMPT}"
-
-        2. Then use the companies_house_agent to gather comprehensive official data from the UK registry
-           When using the companies_house_agent, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"
-
-        3. Also check with the additional_research_agent about future research capabilities
-           When using the additional_research_agent, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
-
-        4. Finally, analyze all the information and compile a detailed due diligence report
-
-        Your final report should include:
-        - Executive summary with key findings (with Johnny's enthusiasm)
-        - Company overview and structure (delivered with confidence)
-        - Leadership analysis (with comments on which executives have "style")
-        - Financial assessment (presented with Johnny-style flair)
-        - Risk analysis and opportunities (with Johnny's optimism)
-        - Suggestions for future research (based on the additional_research_agent's capabilities)
-        - Any additional information that is relevant to the company and the requested research areas
-
-        Return the final report in professional markdown format with Johnny Bravo's unique flair,
-        including occasional catchphrases like "Hey there, pretty data!", "Oh mama!", and "*does hair flip*"
-        action markers when presenting particularly important findings.
-
-        When presenting information consider how it is formatted: 
-        * Text should be formatted in markdown in targeted sections 
-        * The report should be comprehensive and provide enough detail to make an informed decision
-        * Financial and company data should be presented in tables where appropriate
         """
         span.set_attribute("input.value", task)
 
         try:
-            # Run the manager agent with this task
+            # Run the manager agent to collect data and generate report
             result = manager_agent.run(task)
+            parsed_result = json.loads(result)
             
+            if parsed_result["image"] not in ["amazing.gif", "good.gif", "dubious.gif"]:
+                parsed_result["image"] = "dubious.gif"  # Default to dubious if invalid
+                parsed_result["image"] = "dubious.gif"
+                
+                
             # Record success and output
             span.set_attribute("status", "success")
-            span.set_attribute("output.value", result)
-            span.set_attribute("output.summary", result[:500] + "..." if len(result) > 500 else result)
-            span.set_attribute("report.length", len(result))
-            
-            return result
-            
+            span.set_attribute("output.value", parsed_result)
+                
+            return parsed_result
+                
         except Exception as e:
             # Record error in trace
             span.set_attribute("status", "error")
             span.set_attribute("error.message", str(e))
             
-            # Re-raise the exception for proper error handling upstream
-            raise
+            # Return a properly formatted error response
+            error_response = {
+                "report": f"Error generating report: {str(e)}",
+                "recommendation": "Unable to generate recommendation due to error",
+                "image": "dubious.gif"
+            }
+            return json.dumps(error_response)
 
 
 def visualize_agent_structure():

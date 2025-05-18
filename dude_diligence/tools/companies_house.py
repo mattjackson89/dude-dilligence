@@ -9,7 +9,7 @@ Access official UK company registry data through the Companies House API.
 import base64
 import logging
 import os
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 from smolagents import tool
@@ -28,24 +28,22 @@ from dude_diligence.utils.companies_house_utils import (
     load_schema,
 )
 
+from dude_diligence.models import (
+    CompanyBasicInfo,
+    CorporateStructure,
+    LeadershipInfo,
+    LegalInfo,
+    Officer,
+    OwnershipInfo,
+    PSC,
+)
+from dude_diligence.utils.tracing import set_tool_attributes
+
 logger = logging.getLogger(__name__)
 
 # Get API key from environment variables
 API_KEY = os.getenv("COMPANIES_HOUSE_API_KEY", "")
 BASE_URL = "https://api.company-information.service.gov.uk"
-
-
-def set_tool_attributes(name: str, display_name: str):
-    """Set custom attributes on the current span for better tracing in Langfuse.
-    
-    Args:
-        name: The technical name of the tool
-        display_name: A friendly display name for the tool in trace visualizations
-    """
-    current_span = trace.get_current_span()
-    current_span.set_attribute("tool.name", name)
-    current_span.set_attribute("tool.display_name", display_name)
-    current_span.set_attribute("tool.type", "companies_house_tool")
 
 
 def _get_auth_header():
@@ -142,7 +140,7 @@ def _search_company(company_name: str) -> str | None:
 
 
 @tool
-def get_company_profile(company_name: str, search_first: bool = True) -> dict[str, Any]:
+def get_company_profile(company_name: str, search_first: bool = True) -> CompanyBasicInfo:
     """Get company profile information from Companies House (UK).
 
     This tool fetches official company information from Companies House, the UK's company registry.
@@ -151,6 +149,9 @@ def get_company_profile(company_name: str, search_first: bool = True) -> dict[st
     Args:
         company_name: Name or number of the UK company
         search_first: Whether to search for the company first to get the company number
+
+    Returns:
+        CompanyBasicInfo: Structured company profile information
     """
     set_tool_attributes("get_company_profile", "Companies House Profile")
     
@@ -162,24 +163,36 @@ def get_company_profile(company_name: str, search_first: bool = True) -> dict[st
     if search_first and not (company_name.isalnum() and len(company_name) <= 8):
         company_number = _search_company(company_name)
         if not company_number:
-            return {
-                "error": f"Could not find company number for UK company '{company_name}'",
-                "company_name": company_name,
-            }
+            raise ValueError(f"Could not find company number for UK company '{company_name}'")
 
     # Get the company profile by number
     url = f"{BASE_URL}/company/{company_number}"
     profile = _make_request("GET", url)
 
-    # If there was an error, include the company name in the response
     if "error" in profile:
-        profile["company_name"] = company_name
+        raise ValueError(f"Error fetching company profile: {profile['error']}")
 
-    return profile
+    # Defensive: check for required fields
+    required_fields = [
+        "company_name", "company_number", "company_status", "date_of_creation"
+    ]
+    missing_fields = [field for field in required_fields if field not in profile]
+    if missing_fields:
+        logger.error(f"Company profile response missing required fields: {missing_fields}. Raw response: {profile}")
+        raise ValueError(f"Company profile response missing required fields: {missing_fields}")
+
+    return CompanyBasicInfo(
+        name=profile.get("company_name", ""),
+        company_number=profile.get("company_number", ""),
+        status=profile.get("company_status", ""),
+        incorporation_date=profile.get("date_of_creation", ""),
+        company_type=profile.get("type", ""),
+        registered_address=profile.get("registered_office_address", {}).get("address_line_1", ""),
+    )
 
 
 @tool
-def get_company_officers(company_number: str, items_per_page: int = 20) -> dict[str, Any]:
+def get_company_officers(company_number: str, items_per_page: int = 20) -> LeadershipInfo:
     """Get the officers (directors, secretaries, etc.) of a company.
 
     This tool fetches the list of officers associated with a company from Companies House.
@@ -188,6 +201,9 @@ def get_company_officers(company_number: str, items_per_page: int = 20) -> dict[
     Args:
         company_number: The Companies House company number
         items_per_page: Number of results to return per page (max 100)
+
+    Returns:
+        LeadershipInfo: Structured information about company officers
     """
     set_tool_attributes("get_company_officers", "Companies House Officers")
     
@@ -196,7 +212,32 @@ def get_company_officers(company_number: str, items_per_page: int = 20) -> dict[
     url = f"{BASE_URL}/company/{company_number}/officers"
     params = {"items_per_page": items_per_page}
 
-    return _make_request("GET", url, params=params)
+    response = _make_request("GET", url, params=params)
+    if "error" in response:
+        raise ValueError(f"Error fetching company officers: {response['error']}")
+
+    officers = response.get("items", [])
+    directors = []
+    secretary = None
+
+    for officer in officers:
+        officer_data = Officer(
+            name=officer.get("name", ""),
+            role=officer.get("officer_role", ""),
+            appointment_date=officer.get("appointed_on", ""),
+            nationality=officer.get("nationality", None),
+            date_of_birth=str(officer.get("date_of_birth", {}).get("year")) if officer.get("date_of_birth", {}).get("year") is not None else None,
+            country_of_residence=officer.get("country_of_residence", None),
+        )
+        if officer.get("officer_role") == "secretary":
+            secretary = officer_data
+        else:
+            directors.append(officer_data)
+
+    return LeadershipInfo(
+        directors=directors,
+        company_secretary=secretary,
+    )
 
 
 @tool
@@ -223,7 +264,7 @@ def get_filing_history(company_number: str, items_per_page: int = 20) -> dict[st
 @tool
 def get_persons_with_significant_control(
     company_number: str, items_per_page: int = 20
-) -> dict[str, Any]:
+) -> OwnershipInfo:
     """Get persons with significant control (PSC) over a company.
 
     This tool fetches information about individuals or entities with significant control
@@ -232,6 +273,9 @@ def get_persons_with_significant_control(
     Args:
         company_number: The Companies House company number
         items_per_page: Number of results to return per page (max 100)
+
+    Returns:
+        OwnershipInfo: Structured information about company ownership
     """
     set_tool_attributes("get_persons_with_significant_control", "Companies House PSC")
     
@@ -240,11 +284,31 @@ def get_persons_with_significant_control(
     url = f"{BASE_URL}/company/{company_number}/persons-with-significant-control"
     params = {"items_per_page": items_per_page}
 
-    return _make_request("GET", url, params=params)
+    response = _make_request("GET", url, params=params)
+    if "error" in response:
+        raise ValueError(f"Error fetching PSCs: {response['error']}")
+
+    pscs = response.get("items", [])
+    psc_list = []
+
+    for psc in pscs:
+        psc_list.append(
+            PSC(
+                name=psc.get("name", ""),
+                nature_of_control=psc.get("natures_of_control", []),
+                ownership_percentage=psc.get("percentage_of_shares", None),
+                nationality=psc.get("nationality", None),
+                country_of_residence=psc.get("country_of_residence", None),
+            )
+        )
+
+    return OwnershipInfo(
+        persons_with_significant_control=psc_list,
+    )
 
 
 @tool
-def get_charges(company_number: str, items_per_page: int = 20) -> dict[str, Any]:
+def get_charges(company_number: str, items_per_page: int = 20) -> LegalInfo:
     """Get the charges (mortgages, etc.) registered against a company.
 
     This tool fetches information about charges and mortgages registered against a company.
@@ -253,6 +317,9 @@ def get_charges(company_number: str, items_per_page: int = 20) -> dict[str, Any]
     Args:
         company_number: The Companies House company number
         items_per_page: Number of results to return per page (max 100)
+
+    Returns:
+        LegalInfo: Structured information about company charges
     """
     set_tool_attributes("get_charges", "Companies House Charges")
     
@@ -261,13 +328,19 @@ def get_charges(company_number: str, items_per_page: int = 20) -> dict[str, Any]
     url = f"{BASE_URL}/company/{company_number}/charges"
     params = {"items_per_page": items_per_page}
 
-    return _make_request("GET", url, params=params)
+    response = _make_request("GET", url, params=params)
+    if "error" in response:
+        raise ValueError(f"Error fetching charges: {response['error']}")
+
+    return LegalInfo(
+        charges=response.get("items", []),
+    )
 
 
 @tool
 def perform_company_due_diligence(
     company_name: str, include_sections: list[str] | None = None
-) -> dict[str, Any]:
+) -> tuple[CompanyBasicInfo, CorporateStructure, LeadershipInfo, OwnershipInfo, LegalInfo]:
     """Perform comprehensive due diligence on a UK company.
 
     This tool conducts a thorough investigation of a UK registered company by:
@@ -281,6 +354,14 @@ def perform_company_due_diligence(
         include_sections: List of sections to include in the report
                           Options: ["profile", "officers", "filing_history", "pscs", "charges"]
                           If None, all sections are included
+
+    Returns:
+        Tuple containing structured company information:
+        - CompanyBasicInfo: Basic company information
+        - CorporateStructure: Corporate structure information
+        - LeadershipInfo: Leadership and governance information
+        - OwnershipInfo: Ownership and control information
+        - LegalInfo: Legal and regulatory information
     """
     set_tool_attributes("perform_company_due_diligence", "Companies House Due Diligence")
     
@@ -294,37 +375,31 @@ def perform_company_due_diligence(
     valid_sections = ["profile", "officers", "filing_history", "pscs", "charges"]
     invalid_sections = [s for s in include_sections if s not in valid_sections]
     if invalid_sections:
-        return {
-            "error": f"Invalid section(s): {', '.join(invalid_sections)}",
-            "valid_sections": valid_sections,
-        }
+        raise ValueError(f"Invalid section(s): {', '.join(invalid_sections)}")
 
     # Step 1: Find company by name
     search_results = search_companies(company_name)
     if "error" in search_results or not search_results.get("items"):
-        return {"error": f"UK company '{company_name}' not found in Companies House registry"}
+        raise ValueError(f"UK company '{company_name}' not found in Companies House registry")
 
     # Get the company number from the first match
     company_number = search_results["items"][0]["company_number"]
-    company_info = {"company_search": search_results}
 
     # Step 2: Gather requested company information
-    if "profile" in include_sections:
-        company_info["profile"] = get_company_profile(company_number, search_first=False)
+    basic_info = get_company_profile(company_number, search_first=False)
+    
+    # Create corporate structure from profile
+    corporate_structure = CorporateStructure(
+        share_capital=search_results["items"][0].get("share_capital", {}).get("share_capital", None),
+    )
 
-    if "officers" in include_sections:
-        company_info["officers"] = get_company_officers(company_number)
+    # Get other information if requested
+    leadership_info = get_company_officers(company_number) if "officers" in include_sections else LeadershipInfo()
+    ownership_info = get_persons_with_significant_control(company_number) if "pscs" in include_sections else OwnershipInfo()
+    legal_info = get_charges(company_number) if "charges" in include_sections else LegalInfo()
 
-    if "filing_history" in include_sections:
-        company_info["filing_history"] = get_filing_history(company_number)
+    return basic_info, corporate_structure, leadership_info, ownership_info, legal_info
 
-    if "pscs" in include_sections:
-        company_info["pscs"] = get_persons_with_significant_control(company_number)
-
-    if "charges" in include_sections:
-        company_info["charges"] = get_charges(company_number)
-
-    return company_info
 
 @tool
 def explore_companies_house_api() -> dict[str, Any]:

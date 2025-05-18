@@ -10,6 +10,7 @@ import logging
 
 from dude_diligence import run_due_diligence
 from dude_diligence.agents import create_manager_agent
+from dude_diligence.utils.parsers import parse_response
 
 # Johnny's signature colors
 JOHNNY_YELLOW = "#FFD700"
@@ -24,19 +25,20 @@ class ReportContextAgent:
 
     def __init__(self, base_agent):
         self.base_agent = base_agent
-        self.report = ""
+        self.report_markdown = ""
+        self.report_raw = None
         self.company_name = ""
         self.name = "Johnny Bravo"  # Add name attribute for GradioUI compatibility
         self.session_id = str(uuid.uuid4())
 
-    def set_report_context(self, report, company_name):
+    def set_report_context(self, report_markdown, company_name):
         """Set the report context for future interactions."""
-        self.report = report
+        self.report_markdown = report_markdown
         self.company_name = company_name
 
     def run(self, user_message):
         """Run the agent with the report context included."""
-        if not self.report:
+        if not self.report_markdown:
             return "No report has been generated yet. Please run due diligence first."
 
         from opentelemetry import trace
@@ -50,47 +52,32 @@ class ReportContextAgent:
             # Add input/output attributes for consistency with Due-Diligence-Process
             span.set_attribute("input.value", user_message)
 
-            # Import the specialized agent prompts
-            from dude_diligence.utils.prompts import (
-                FINDER_AGENT_PROMPT,
-                COMPANIES_HOUSE_AGENT_PROMPT,
-                ADDITIONAL_RESEARCH_AGENT_PROMPT,
-            )
-
             prompt = f"""
             You are Johnny Bravo, a charismatic, confident, and slightly narcissistic cartoon character who's now an expert in company due diligence.
 
             You have completed a due diligence report for {self.company_name} and you're ready to flex your knowledge muscles.
 
             HERE'S THE REPORT CONTEXT (read this carefully, it's as important as my hair):
-            {self.report}
+            {self.report_markdown}
 
             The user's question is: {user_message}
 
             First, determine if you can answer the question using ONLY the existing report.
-            
             If the information is in the report:
-            - Answer the question directly using that information with Johnny Bravo style
-            
+            - Answer the question directly using that information
+            - Format your response in Johnny Bravo's distinctive style:
+              * Use catchphrases like "Hey there, pretty data!", "Oh mama!", and "Man, I'm pretty!"
+              * Frequently reference your good looks, muscles, and hair
+              * Add "*does hair flip*" or "*strikes pose*" action markers when presenting important information
+              * Speak in confident, punchy sentences with lots of enthusiasm
+              * Always maintain your swagger while providing accurate information
+
             If the information is NOT in the report, use your available tools to find it:
-            
-            1. For web research and finding general company information:
-            When using web search tools, instruct it with: "{FINDER_AGENT_PROMPT}"
-            
-            2. For official UK company registry data:
-            When using Companies House tools, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"
-            
-            3. For additional research capabilities:
-            When using additional research tools, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
-            
+           - Use the finder_agent to search for web-based information
+           - Use the companies_house_agent to retrieve official registry data
+           - Use the additional_research_agent to check for future capabilities
+               
             After using any tools, analyze the results and provide a helpful answer with Johnny Bravo's unique flair.
-            
-            Answer with Johnny Bravo's distinctive style:
-            - Use catchphrases like "Hey there, pretty data!", "Oh mama!", and "Man, I'm pretty!"
-            - Frequently reference your good looks, muscles, and hair
-            - Add "*does hair flip*" or "*strikes pose*" action markers when presenting important information
-            - Speak in confident, punchy sentences with lots of enthusiasm
-            - Always maintain your swagger while providing accurate information
             """
 
             try:
@@ -144,11 +131,6 @@ def create_ui():
                 label="Company Name",
                 placeholder="Enter UK company name (e.g., Tesla Motors UK)",
             )
-            research_areas = gr.Textbox(
-                label="Research Areas (comma-separated)",
-                placeholder="Company Overview, Officers, Financial Status",
-                value="Company Overview, Officers, Financial Status",
-            )
 
         # Status indicator
         status_html = gr.HTML("")
@@ -160,8 +142,16 @@ def create_ui():
         with gr.Row(visible=False) as results_row:
             # Report on left (75% width)
             with gr.Column(scale=3):
+                
+                # Add new recommendation section 
+                gr.Markdown("## Johnny's Recommendation")
+                recommendation_output = gr.HTML(value="", elem_classes=["contain"])
+
+                # Add details section
                 gr.Markdown("## Due Diligence Report")
                 report_output = gr.Markdown(elem_classes=["contain"])
+                
+
 
             # Chat on right (25% width)
             with gr.Column(scale=1):
@@ -175,8 +165,6 @@ def create_ui():
                         None,
                         "https://www.clipartmax.com/png/middle/112-1127678_johnny-bravo-logo-png-transparent-johnny-bravo.png",
                     ),
-                    # type="messages", app-1  | gradio.exceptions.Error: "Data incompatible with messages format. Each message should be a dictionary with 'role' and 'content' keys or a ChatMessage object."
-
                 )
                 chat_input = gr.Textbox(
                     placeholder="Ask Johnny about the report...", label="Your message"
@@ -198,33 +186,69 @@ def create_ui():
             </div>
             """
 
-        def run_due_diligence_report(company_name, research_areas_text):
+        def run_due_diligence_report(company_name):
             """Run the due diligence report and return results."""
             if not company_name:
                 return (
                     "Hey there! I need a company name to flex my research muscles!",
+                    "",
+                    None,
                     """<div style="text-align: center; margin-top: 10px;">
                        <p style="color: #FF4500; font-weight: bold;"> Please enter a company name</p>
                        </div>""",
                     gr.update(visible=False),
                     [],
+                    None,
                 )
 
-            research_areas = [
-                area.strip() for area in research_areas_text.split(",") if area.strip()
-            ]
             try:
-                result = run_due_diligence(company_name, research_areas)
-
-                # Set report context for the agent
-                context_agent.set_report_context(result, company_name)
+                logger.info(f"Starting due diligence for company: {company_name}")
+                parsed_result = run_due_diligence(company_name)
+                logger.info("Due diligence completed successfully")
+                
+                # Extract components
+                report_markdown = parsed_result["report"]
+                recommendation_data = parsed_result["recommendation"]
+                image_name = parsed_result["image"]
+                
+                # Format recommendation with strengths and risks
+                formatted_recommendation = f"""
+                <div style="display: flex; align-items: flex-start; gap: 2rem;">
+                    <div style="color: {JOHNNY_BLUE}; font-size: 1.1em; line-height: 1.5; padding: 1rem; border-left: 4px solid {JOHNNY_BLUE}; background-color: rgba(30, 144, 255, 0.1); flex: 2;">
+                        <h3 style="color: {JOHNNY_BLUE}; margin-top: 0;">Overall Assessment</h3>
+                        {recommendation_data['overall_assessment']}
+                        
+                        <h4 style="color: {JOHNNY_BLUE}; margin-top: 1rem;">Key Strengths</h4>
+                        <ul>
+                            {''.join(f'<li>{strength}</li>' for strength in recommendation_data['key_strengths'])}
+                        </ul>
+                        
+                        <h4 style="color: {JOHNNY_BLUE}; margin-top: 1rem;">Key Risks</h4>
+                        <ul>
+                            {''.join(f'<li>{risk}</li>' for risk in recommendation_data['key_risks'])}
+                        </ul>
+                        
+                        <h4 style="color: {JOHNNY_BLUE}; margin-top: 1rem;">Final Recommendation</h4>
+                        {recommendation_data['final_recommendation']}
+                    </div>
+                    <div style="flex: 1; text-align: center;">
+                        <img src='app/images/{image_name}' alt='Johnny's Assessment' style='max-width: 150px; border-radius: 8px;'/>
+                        <div style="font-size: 0.9em; color: #888; margin-top: 0.5em;">Johnny's Assessment</div>
+                    </div>
+                </div>
+                """
+                
+                # Set the report context for chat
+                context_agent.set_report_context(report_markdown, company_name)
+                logger.info("Successfully set report context")
 
                 # Create initial chat message
                 initial_message = f"Hey there, hot stuff! I've just completed the due diligence on {company_name}. Ask me anything about it! *flexes muscles*"
 
                 # Make results container visible
                 return (
-                    result,
+                    report_markdown,
+                    formatted_recommendation,
                     """<div style="text-align: center; margin-top: 10px;">
                        <p style="color: #008000; font-weight: bold;"> Report generated successfully!</p>
                        </div>""",
@@ -232,13 +256,17 @@ def create_ui():
                     [[None, initial_message]],
                 )
             except Exception as e:
+                logger.error(f"Error in run_due_diligence_report: {str(e)}", exc_info=True)
                 return (
                     f"Whoops! Johnny couldn't complete the research: {str(e)}",
+                    "",
+                    None,
                     """<div style="text-align: center; margin-top: 10px;">
                        <p style="color: #FF4500; font-weight: bold;"> There was an error generating the report</p>
                        </div>""",
                     gr.update(visible=False),
                     [],
+                    None,
                 )
 
         def respond_to_chat(message, chat_history):
@@ -263,8 +291,8 @@ def create_ui():
         # Connect UI components
         submit_btn.click(fn=start_processing, inputs=None, outputs=status_html).then(
             fn=run_due_diligence_report,
-            inputs=[company_input, research_areas],
-            outputs=[report_output, status_html, results_row, chatbot],
+            inputs=[company_input],
+            outputs=[report_output, recommendation_output, status_html, results_row, chatbot],
         )
 
         # Handle chat interactions

@@ -18,6 +18,21 @@ from dude_diligence.agents import (
     visualize_agent_structure,
 )
 
+# Import models
+from dude_diligence.models import (
+    CompanyBasicInfo,
+    CorporateStructure,
+    DueDiligenceReport,
+    FinancialInfo,
+    LeadershipInfo,
+    LegalInfo,
+    MarketInfo,
+    OperationalInfo,
+    OwnershipInfo,
+    ReportMetadata,
+    RiskAssessment,
+)
+
 # Keep necessary tool imports
 from dude_diligence.tools.companies_house import (
     get_charges,
@@ -46,4 +61,16 @@ __all__ = [
     "get_charges",
     # Tracing utilities
     "initialize_tracing",
+    # Models
+    "CompanyBasicInfo",
+    "CorporateStructure",
+    "DueDiligenceReport",
+    "FinancialInfo",
+    "LeadershipInfo",
+    "LegalInfo",
+    "MarketInfo",
+    "OperationalInfo",
+    "OwnershipInfo",
+    "ReportMetadata",
+    "RiskAssessment",
 ]

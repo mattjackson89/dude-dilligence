@@ -18,6 +18,26 @@ logger = logging.getLogger(__name__)
 _tracer_provider = None
 _tracing_initialized = False
 
+def set_tool_attributes(tool_name: str, tool_type: str) -> None:
+    """Set attributes for a tool in the current span.
+    
+    This function adds tool-specific attributes to the current span
+    for better tracing and monitoring of tool usage.
+    
+    Args:
+        tool_name: Name of the tool being used
+        tool_type: Type or category of the tool
+    """
+    try:
+        current_span = trace.get_current_span()
+        if current_span and hasattr(current_span, 'set_attribute'):
+            current_span.set_attribute("tool.name", tool_name)
+            current_span.set_attribute("tool.type", tool_type)
+            logger.debug(f"Set tool attributes for {tool_name} ({tool_type})")
+    except Exception as e:
+        # Fail silently if there's an issue with span access
+        logger.warning(f"Could not set tool attributes: {str(e)}")
+
 def initialize_tracing(force=False) -> TracerProvider:
     """Initialize OpenTelemetry tracing for Langfuse.
     
