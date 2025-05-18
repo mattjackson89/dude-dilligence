@@ -249,10 +249,6 @@ def create_ui():
                 gr.Markdown("## Due Diligence Report")
                 report_output = gr.HTML()
 
-                # Add JSON expander
-                with gr.Accordion("Raw Report Data", open=False):
-                    json_output = gr.JSON(label="Report Data")
-
             # Chat on right (25% width)
             with gr.Column(scale=1):
                 gr.Markdown("## Chat with Johnny")
