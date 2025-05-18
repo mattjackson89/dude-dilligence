@@ -32,6 +32,7 @@ def main():
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
+        root_path="",
     )
 
     logger.info("Dude Diligence is ready to flex those research muscles!")

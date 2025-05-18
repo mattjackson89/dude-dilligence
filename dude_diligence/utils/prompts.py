@@ -47,7 +47,7 @@ DETAILED RESPONSIBILITIES:
         * get_company_officers() for leadership analysis
         * get_persons_with_significant_control() for ownership structure
         * get_charges() for financial obligations
-        * get_filing_history() for regulatory compliance
+        * get_filing_history() for regulatory compliance and filing history 
 
 2. Detailed Report Generation:
     Write a comprehensive markdown report that includes:
@@ -100,6 +100,8 @@ DETAILED RESPONSIBILITIES:
     - Ensure all data sources are properly cited
     - Adapt sections based on available information
     - Focus on material findings and risks
+    - Utilise markdown tables for structured information
+    - Produce visual timelines or other simple diagrams if it improves readibility
 
 3. Investment Recommendation & Summary:
     Provide a comprehensive recommendation with the following structure:

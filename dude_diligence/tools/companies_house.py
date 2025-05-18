@@ -397,8 +397,9 @@ def perform_company_due_diligence(
     leadership_info = get_company_officers(company_number) if "officers" in include_sections else LeadershipInfo()
     ownership_info = get_persons_with_significant_control(company_number) if "pscs" in include_sections else OwnershipInfo()
     legal_info = get_charges(company_number) if "charges" in include_sections else LegalInfo()
+    filing_history = get_filing_history(company_number)
 
-    return basic_info, corporate_structure, leadership_info, ownership_info, legal_info
+    return basic_info, corporate_structure, leadership_info, ownership_info, legal_info, filing_history
 
 
 @tool

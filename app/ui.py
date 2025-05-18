@@ -7,10 +7,11 @@ Johnny Bravo's stylish UI for company research.
 import gradio as gr
 import uuid
 import logging
+import markdown
+from pathlib import Path
 
 from dude_diligence import run_due_diligence
 from dude_diligence.agents import create_manager_agent
-from dude_diligence.utils.parsers import parse_response
 
 # Johnny's signature colors
 JOHNNY_YELLOW = "#FFD700"
@@ -73,9 +74,8 @@ class ReportContextAgent:
               * Always maintain your swagger while providing accurate information
 
             If the information is NOT in the report, use your available tools to find it:
-           - Use the finder_agent to search for web-based information
-           - Use the companies_house_agent to retrieve official registry data
-           - Use the additional_research_agent to check for future capabilities
+            - Use the finder_agent to search for web-based information
+            - Use the companies_house_agent to retrieve official registry data
                
             After using any tools, analyze the results and provide a helpful answer with Johnny Bravo's unique flair.
             """
@@ -111,16 +111,115 @@ def create_ui():
     with gr.Blocks(
         theme=gr.themes.Base(),
         css="""
+        /* Base styling */
         footer {visibility: hidden}
-        .contain {height: 600px; overflow-y: auto;}
-    """,
+        
+        /* Define a spacing system */
+        :root {
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 2rem;
+            --spacing-xl: 3rem;
+        }
+        
+        /* Typography improvements */
+        body {
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+        }
+        h1, h2, h3 { 
+            letter-spacing: -0.02em; 
+        }
+        
+        /* Button enhancements */
+        button {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        /* Form focus states */
+        input:focus, textarea:focus {
+            border-color: #1E90FF !important;
+            box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.25) !important;
+            outline: none !important;
+        }
+        
+        /* Loading animation */
+        .loading { 
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        /* Scrollbar customization */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* Responsive design for recommendation section */
+        @media (max-width: 768px) {
+            div[style*="display: flex"] {
+                flex-direction: column !important;
+            }
+            div[style*="flex: 1"] {
+                text-align: center !important;
+                margin-top: var(--spacing-md);
+            }
+        }
+        
+        /* Enhance chatbot UI */
+        [data-testid="chatbot"] {
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* List item styling */
+        ul li {
+            margin-bottom: var(--spacing-xs);
+            position: relative;
+        }
+        
+        /* Card-like effect for report sections */
+        .gradio-html {
+            border-radius: 8px;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+        .gradio-html:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Animation for new content */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        """,
     ) as ui:
+        # Set the absolute path to your images directory
+        image_dir = Path.cwd() / "app" / "images"
+        gr.set_static_paths([image_dir])
+        
         # Header
         gr.HTML(
             f"""
             <div style="text-align: center; margin-bottom: 1rem;">
                 <h1 style="color: {JOHNNY_BLUE};">Dude Diligence</h1>
-                <h3 style="color: {JOHNNY_BLACK};">Johnny Bravo's UK Company Research Tool</h3>
+                <h3 style="color: {JOHNNY_YELLOW};">Johnny Bravo's UK Company Research Tool</h3>
             </div>
             """
         )
@@ -142,16 +241,17 @@ def create_ui():
         with gr.Row(visible=False) as results_row:
             # Report on left (75% width)
             with gr.Column(scale=3):
-                
-                # Add new recommendation section 
+                # Add new recommendation section first
                 gr.Markdown("## Johnny's Recommendation")
-                recommendation_output = gr.HTML(value="", elem_classes=["contain"])
+                recommendation_output = gr.HTML(value="")
 
                 # Add details section
                 gr.Markdown("## Due Diligence Report")
-                report_output = gr.Markdown(elem_classes=["contain"])
-                
+                report_output = gr.HTML()
 
+                # Add JSON expander
+                with gr.Accordion("Raw Report Data", open=False):
+                    json_output = gr.JSON(label="Report Data")
 
             # Chat on right (25% width)
             with gr.Column(scale=1):
@@ -180,7 +280,7 @@ def create_ui():
                      alt="Johnny Bravo flexing"
                      width="150"
                      style="display: block; margin: 0 auto 15px auto;">
-                <p style="color: #1E90FF; font-weight: bold; font-size: 18px;">
+                <p style="color: #1E90FF; font-weight: bold; font-size: 18px;" class="loading">
                     Johnny is flexing his research muscles... This might take a minute!
                 </p>
             </div>
@@ -213,7 +313,7 @@ def create_ui():
                 
                 # Format recommendation with strengths and risks
                 formatted_recommendation = f"""
-                <div style="display: flex; align-items: flex-start; gap: 2rem;">
+                <div style="display: flex; align-items: flex-start; gap: 2rem;" class="animate-fade-in">
                     <div style="color: {JOHNNY_BLUE}; font-size: 1.1em; line-height: 1.5; padding: 1rem; border-left: 4px solid {JOHNNY_BLUE}; background-color: rgba(30, 144, 255, 0.1); flex: 2;">
                         <h3 style="color: {JOHNNY_BLUE}; margin-top: 0;">Overall Assessment</h3>
                         {recommendation_data['overall_assessment']}
@@ -231,10 +331,18 @@ def create_ui():
                         <h4 style="color: {JOHNNY_BLUE}; margin-top: 1rem;">Final Recommendation</h4>
                         {recommendation_data['final_recommendation']}
                     </div>
-                    <div style="flex: 1; text-align: center;">
-                        <img src='app/images/{image_name}' alt='Johnny's Assessment' style='max-width: 150px; border-radius: 8px;'/>
-                        <div style="font-size: 0.9em; color: #888; margin-top: 0.5em;">Johnny's Assessment</div>
+                    <div style="flex: 1; text-align: left;">
+                        <img src='/gradio_api/file=app/images/{image_name}' alt='A gif representing Johnny's feelings' style='max-width: 150px; border-radius: 8px;'/>
+                        <div style="font-size: 0.9em; color: #888; margin-top: 0.5em;">Johnny's Reaction</div>
                     </div>
+                </div>
+                """
+
+                # Convert markdown to HTML and then wrap in styled container
+                report_html = markdown.markdown(report_markdown)
+                formatted_report = f"""
+                <div style="color: {JOHNNY_YELLOW}; font-size: 1.1em; line-height: 1.5; padding: 1rem; border-left: 4px solid {JOHNNY_YELLOW}; background-color: rgba(255, 215, 0, 0.1);" class="animate-fade-in">
+                    {report_html}
                 </div>
                 """
                 
@@ -247,13 +355,14 @@ def create_ui():
 
                 # Make results container visible
                 return (
-                    report_markdown,
+                    formatted_report,
                     formatted_recommendation,
                     """<div style="text-align: center; margin-top: 10px;">
                        <p style="color: #008000; font-weight: bold;"> Report generated successfully!</p>
                        </div>""",
                     gr.update(visible=True),
                     [[None, initial_message]],
+                    parsed_result,
                 )
             except Exception as e:
                 logger.error(f"Error in run_due_diligence_report: {str(e)}", exc_info=True)
@@ -292,7 +401,7 @@ def create_ui():
         submit_btn.click(fn=start_processing, inputs=None, outputs=status_html).then(
             fn=run_due_diligence_report,
             inputs=[company_input],
-            outputs=[report_output, recommendation_output, status_html, results_row, chatbot],
+            outputs=[report_output, recommendation_output, status_html, results_row, chatbot, json_output],
         )
 
         # Handle chat interactions

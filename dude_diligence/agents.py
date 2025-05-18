@@ -376,7 +376,7 @@ def run_due_diligence(company_name: str) -> dict:
                 
             # Record success and output
             span.set_attribute("status", "success")
-            span.set_attribute("output.value", parsed_result)
+            span.set_attribute("output.value", json.dumps(parsed_result))
                 
             return parsed_result
                 
