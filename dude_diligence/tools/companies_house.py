@@ -326,149 +326,149 @@ def perform_company_due_diligence(
 
     return company_info
 
-# @tool
-# def explore_companies_house_api() -> dict[str, Any]:
-#     """Explore the Companies House API schema to discover available endpoints.
+@tool
+def explore_companies_house_api() -> dict[str, Any]:
+    """Explore the Companies House API schema to discover available endpoints.
 
-#     This tool returns a list of all available endpoints in the Companies House API,
-#     along with their descriptions. Use this to understand what data you can retrieve.
-#     """
-#     set_tool_attributes("explore_companies_house_api", "Companies House API Explorer")
+    This tool returns a list of all available endpoints in the Companies House API,
+    along with their descriptions. Use this to understand what data you can retrieve.
+    """
+    set_tool_attributes("explore_companies_house_api", "Companies House API Explorer")
     
-#     logger.info("Exploring Companies House API schema")
+    logger.info("Exploring Companies House API schema")
 
-#     endpoints = get_endpoint_definitions()
-#     if not endpoints:
-#         return {"error": "Could not load API schema"}
+    endpoints = get_endpoint_definitions()
+    if not endpoints:
+        return {"error": "Could not load API schema"}
 
-#     # Create a simplified overview of available endpoints
-#     endpoint_overview = {}
-#     for name, details in endpoints.items():
-#         endpoint_overview[name] = {
-#             "path": details["path"],
-#             "method": details["method"],
-#             "description": details["description"],
-#         }
+    # Create a simplified overview of available endpoints
+    endpoint_overview = {}
+    for name, details in endpoints.items():
+        endpoint_overview[name] = {
+            "path": details["path"],
+            "method": details["method"],
+            "description": details["description"],
+        }
 
-#     return {
-#         "available_endpoints": list(endpoint_overview.keys()),
-#         "endpoint_details": endpoint_overview,
-#     }
+    return {
+        "available_endpoints": list(endpoint_overview.keys()),
+        "endpoint_details": endpoint_overview,
+    }
 
 
-# @tool
-# def get_endpoint_parameters(endpoint_name: str) -> dict[str, Any]:
-#     """Get detailed information about a specific Companies House API endpoint.
+@tool
+def get_endpoint_parameters(endpoint_name: str) -> dict[str, Any]:
+    """Get detailed information about a specific Companies House API endpoint.
 
-#     This tool provides detailed information about a specific endpoint, including
-#     required and optional parameters, and their descriptions.
+    This tool provides detailed information about a specific endpoint, including
+    required and optional parameters, and their descriptions.
 
-#     Args:
-#         endpoint_name: Name of the endpoint to get details for (e.g., "search-companies")
-#     """
-#     set_tool_attributes("get_endpoint_parameters", "Companies House API Parameters")
+    Args:
+        endpoint_name: Name of the endpoint to get details for (e.g., "search-companies")
+    """
+    set_tool_attributes("get_endpoint_parameters", "Companies House API Parameters")
     
-#     logger.info(f"Getting parameter details for endpoint: {endpoint_name}")
+    logger.info(f"Getting parameter details for endpoint: {endpoint_name}")
 
-#     endpoints = get_endpoint_definitions()
-#     if not endpoints:
-#         return {"error": "Could not load API schema"}
+    endpoints = get_endpoint_definitions()
+    if not endpoints:
+        return {"error": "Could not load API schema"}
 
-#     if endpoint_name not in endpoints:
-#         return {
-#             "error": f"Endpoint '{endpoint_name}' not found",
-#             "available_endpoints": list(endpoints.keys()),
-#         }
+    if endpoint_name not in endpoints:
+        return {
+            "error": f"Endpoint '{endpoint_name}' not found",
+            "available_endpoints": list(endpoints.keys()),
+        }
 
-#     endpoint_info = endpoints[endpoint_name]
-#     parameters = endpoint_info.get("parameters", [])
+    endpoint_info = endpoints[endpoint_name]
+    parameters = endpoint_info.get("parameters", [])
 
-#     # Organize parameters by required/optional
-#     required_params = []
-#     optional_params = []
+    # Organize parameters by required/optional
+    required_params = []
+    optional_params = []
 
-#     for param in parameters:
-#         param_info = {
-#             "name": param.get("name", ""),
-#             "description": param.get("description", ""),
-#             "type": param.get("type", "string"),
-#             "in": param.get("in", "query"),  # Where the parameter appears (path, query, etc.)
-#         }
+    for param in parameters:
+        param_info = {
+            "name": param.get("name", ""),
+            "description": param.get("description", ""),
+            "type": param.get("type", "string"),
+            "in": param.get("in", "query"),  # Where the parameter appears (path, query, etc.)
+        }
 
-#         if param.get("required", False):
-#             required_params.append(param_info)
-#         else:
-#             optional_params.append(param_info)
+        if param.get("required", False):
+            required_params.append(param_info)
+        else:
+            optional_params.append(param_info)
 
-#     return {
-#         "endpoint_name": endpoint_name,
-#         "path": endpoint_info["path"],
-#         "method": endpoint_info["method"],
-#         "description": endpoint_info["description"],
-#         "required_parameters": required_params,
-#         "optional_parameters": optional_params,
-#     }
+    return {
+        "endpoint_name": endpoint_name,
+        "path": endpoint_info["path"],
+        "method": endpoint_info["method"],
+        "description": endpoint_info["description"],
+        "required_parameters": required_params,
+        "optional_parameters": optional_params,
+    }
 
 
-# @tool
-# def get_schema_examples(endpoint_name: str) -> dict[str, Any]:
-#     """Get example requests and responses for a Companies House API endpoint.
+@tool
+def get_schema_examples(endpoint_name: str) -> dict[str, Any]:
+    """Get example requests and responses for a Companies House API endpoint.
 
-#     This tool provides example request parameters and expected response structures
-#     for a specific endpoint, helping you understand how to use it.
+    This tool provides example request parameters and expected response structures
+    for a specific endpoint, helping you understand how to use it.
 
-#     Args:
-#         endpoint_name: Name of the endpoint to get examples for (e.g., "search-companies")
-#     """
-#     set_tool_attributes("get_schema_examples", "Companies House API Examples")
+    Args:
+        endpoint_name: Name of the endpoint to get examples for (e.g., "search-companies")
+    """
+    set_tool_attributes("get_schema_examples", "Companies House API Examples")
     
-#     logger.info(f"Getting examples for endpoint: {endpoint_name}")
+    logger.info(f"Getting examples for endpoint: {endpoint_name}")
 
-#     schema = load_schema()
-#     if not schema:
-#         return {"error": "Could not load API schema"}
+    schema = load_schema()
+    if not schema:
+        return {"error": "Could not load API schema"}
 
-#     endpoints = get_endpoint_definitions()
-#     if endpoint_name not in endpoints:
-#         return {
-#             "error": f"Endpoint '{endpoint_name}' not found",
-#             "available_endpoints": list(endpoints.keys()),
-#         }
+    endpoints = get_endpoint_definitions()
+    if endpoint_name not in endpoints:
+        return {
+            "error": f"Endpoint '{endpoint_name}' not found",
+            "available_endpoints": list(endpoints.keys()),
+        }
 
-#     endpoint_info = endpoints[endpoint_name]
-#     path = endpoint_info["path"]
-#     method = endpoint_info["method"].lower()
+    endpoint_info = endpoints[endpoint_name]
+    path = endpoint_info["path"]
+    method = endpoint_info["method"].lower()
 
-#     # Extract examples from schema
-#     path_obj = schema.get("paths", {}).get(path, {})
-#     method_obj = path_obj.get(method, {})
+    # Extract examples from schema
+    path_obj = schema.get("paths", {}).get(path, {})
+    method_obj = path_obj.get(method, {})
 
-#     # Get example parameters
-#     example_params = {}
-#     for param in method_obj.get("parameters", []):
-#         if "example" in param:
-#             example_params[param["name"]] = param["example"]
+    # Get example parameters
+    example_params = {}
+    for param in method_obj.get("parameters", []):
+        if "example" in param:
+            example_params[param["name"]] = param["example"]
 
-#     # Get example responses
-#     example_responses = {}
-#     for status_code, response in method_obj.get("responses", {}).items():
-#         example = None
-#         schema_obj = response.get("schema", {})
+    # Get example responses
+    example_responses = {}
+    for status_code, response in method_obj.get("responses", {}).items():
+        example = None
+        schema_obj = response.get("schema", {})
 
-#         # Try to find an example
-#         if "example" in schema_obj:
-#             example = schema_obj["example"]
-#         elif "examples" in response:
-#             example = response["examples"]
+        # Try to find an example
+        if "example" in schema_obj:
+            example = schema_obj["example"]
+        elif "examples" in response:
+            example = response["examples"]
 
-#         if example:
-#             example_responses[status_code] = example
+        if example:
+            example_responses[status_code] = example
 
-#     return {
-#         "endpoint_name": endpoint_name,
-#         "path": path,
-#         "method": method.upper(),
-#         "example_parameters": example_params,
-#         "example_responses": example_responses,
-#     }
+    return {
+        "endpoint_name": endpoint_name,
+        "path": path,
+        "method": method.upper(),
+        "example_parameters": example_params,
+        "example_responses": example_responses,
+    }
 

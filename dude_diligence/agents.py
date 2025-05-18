@@ -13,18 +13,17 @@ from typing import Any
 from smolagents import ToolCallingAgent, DuckDuckGoSearchTool, tool, ToolCallingAgent
 
 from dude_diligence.tools.companies_house import (
-    # explore_companies_house_api,
+    explore_companies_house_api,
     get_charges,
     get_company_officers,
     get_company_profile,
-    # get_endpoint_parameters,
+    get_endpoint_parameters,
     get_filing_history,
     get_persons_with_significant_control,
-    # get_schema_examples,
+    get_schema_examples,
     perform_company_due_diligence,
     search_companies,
 )
-from dude_diligence.tools.linkedin import fetch_linkedin_data
 from dude_diligence.utils.model import get_agent_model
 from dude_diligence.utils.prompts import (
     ADDITIONAL_RESEARCH_AGENT_PROMPT,
@@ -49,7 +48,7 @@ def create_finder_agent() -> ToolCallingAgent:
 
     finder_agent = ToolCallingAgent(
         model=model,
-        tools=[DuckDuckGoSearchTool(), fetch_linkedin_data],
+        tools=[DuckDuckGoSearchTool()],
         name="finder_agent",
         description="Professional web research agent specializing in company information gathering",
     )
@@ -78,9 +77,9 @@ def create_companies_house_agent() -> ToolCallingAgent:
             get_persons_with_significant_control,
             get_charges,
             perform_company_due_diligence,
-            # explore_companies_house_api,
-            # get_endpoint_parameters,
-            # get_schema_examples,
+            explore_companies_house_api,
+            get_endpoint_parameters,
+            get_schema_examples,
         ],
         name="companies_house_agent",
         description="Professional Companies House data specialist providing detailed structured reports",
@@ -230,7 +229,7 @@ def run_due_diligence(
             research_areas = ["Basic Info"]
 
         # Log the start of the process
-        logger.info(f"Starting comprehensive due diligence for '{company_name}'")
+        logger.info(f"Johnny Bravo is checking out UK company '{company_name}' *hair flip*")
 
         # Create the manager agent
         manager_agent = create_manager_agent()
@@ -242,17 +241,35 @@ def run_due_diligence(
         Coordinate a comprehensive due diligence investigation on the UK company '{company_name}'.
         Focus on these research areas: {", ".join(research_areas)}.
 
-        When using the finder_agent, instruct it with: "{FINDER_AGENT_PROMPT}"
-        When using the companies_house_agent, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"  
-        When using the additional_research_agent, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
+        Follow this workflow:
+        1. First use the finder_agent to gather information about the company from public web sources
+           When using the finder_agent, instruct it with: "{FINDER_AGENT_PROMPT}"
 
-        IMPORTANT: This is an iterative investigation. After receiving information:
-        1. Analyze what you've learned
-        2. Identify any gaps or areas needing further exploration
-        3. Request additional information from any agent as needed
-        4. Only compile your final report when you have gathered all necessary information
+        2. Then use the companies_house_agent to gather comprehensive official data from the UK registry
+           When using the companies_house_agent, instruct it with: "{COMPANIES_HOUSE_AGENT_PROMPT}"
 
-        Ensure your final report is comprehensive, well-structured with tables, and follows all the guidelines in the prompt.
+        3. Also check with the additional_research_agent about future research capabilities
+           When using the additional_research_agent, instruct it with: "{ADDITIONAL_RESEARCH_AGENT_PROMPT}"
+
+        4. Finally, analyze all the information and compile a detailed due diligence report
+
+        Your final report should include:
+        - Executive summary with key findings (with Johnny's enthusiasm)
+        - Company overview and structure (delivered with confidence)
+        - Leadership analysis (with comments on which executives have "style")
+        - Financial assessment (presented with Johnny-style flair)
+        - Risk analysis and opportunities (with Johnny's optimism)
+        - Suggestions for future research (based on the additional_research_agent's capabilities)
+        - Any additional information that is relevant to the company and the requested research areas
+
+        Return the final report in professional markdown format with Johnny Bravo's unique flair,
+        including occasional catchphrases like "Hey there, pretty data!", "Oh mama!", and "*does hair flip*"
+        action markers when presenting particularly important findings.
+
+        When presenting information consider how it is formatted: 
+        * Text should be formatted in markdown in targeted sections 
+        * The report should be comprehensive and provide enough detail to make an informed decision
+        * Financial and company data should be presented in tables where appropriate
         """
         span.set_attribute("input.value", task)
 
