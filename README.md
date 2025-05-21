@@ -56,7 +56,7 @@ python -m app.main
 
 ## Agent-powered Research (Johnny's Secret Technique)
 
-Dude Diligence is powered by a multi-agent system using smol-agents, a lightweight LLM agent framework that lets Johnny Bravo orchestrate specialized research agents:
+Dude Diligence is powered by a multi-agent system using LLM agents, a lightweight agent framework that lets Johnny Bravo orchestrate specialized research agents:
 
 - **Manager Agent (Johnny Bravo)**: Coordinates all research and compiles findings
 - **Finder Agent**: Searches the web for public company information
@@ -100,18 +100,25 @@ dude-diligence/
 │   └── ui.py             # Interface (Johnny's style)
 ├── notebooks/            # Development notebooks (Johnny's practice lines)
 │   └── dev.ipynb         # For prototyping (Johnny rehearsing)
+├── examples/             # Example scripts (Johnny showing off)
+│   ├── multi_agent_example.py  # Full multi-agent demo
+│   └── tracing_example.py      # Telemetry and monitoring demo
 └── dude_diligence/       # Core package (Johnny's muscles)
     ├── __init__.py       # Package marker (Johnny was here)
-    ├── agents.py   # Multi-agent orchestration (Johnny's team)
+    ├── agents.py         # Multi-agent orchestration (Johnny's team)
+    ├── models.py         # Data models (Johnny's mental images)
     ├── tools/            # Agent tools (Johnny's gadgets)
     │   ├── __init__.py
-    │   ├── companies_house.py
-    │   └── linkedin.py
+    │   └── companies_house.py  # UK company data tools
+    ├── specs/            # API specifications (Johnny's blueprints)
+    │   └── companies_house_api.json  # OpenAPI spec
     └── utils/            # Utilities (Johnny's accessories)
         ├── __init__.py
-        ├── prompts.py    # LLM prompts (Johnny's pickup lines)
-        ├── model.py      # Model configuration (Johnny's brain)
-        └── parsers.py    # Response parsers (Johnny's translators)
+        ├── prompts.py           # LLM prompts (Johnny's pickup lines)
+        ├── model.py             # Model configuration (Johnny's brain)
+        ├── parsers.py           # Response parsers (Johnny's translators)
+        ├── tracing.py           # Telemetry (Johnny's fitness tracker)
+        └── companies_house_utils.py  # Utility functions for API
 ```
 
 ## Usage

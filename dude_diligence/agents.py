@@ -10,7 +10,7 @@ As Johnny Bravo would say: "Hey there, Pretty Companies! Let me check you out!" 
 import logging
 import json
 from typing import Any
-from smolagents import ToolCallingAgent, DuckDuckGoSearchTool, tool, ToolCallingAgent
+from smolagents import ToolCallingAgent, DuckDuckGoSearchTool, tool, CodeAgent
 
 
 from dude_diligence.tools.companies_house import (
@@ -160,15 +160,13 @@ def create_manager_agent() -> ToolCallingAgent:
     finder_agent = create_finder_agent()
     companies_house_agent = create_companies_house_agent()
 
-    manager_agent = ToolCallingAgent(
+    manager_agent = CodeAgent(
         model=model,
-        tools=[
-            finder_agent,
-            companies_house_agent,
-        ],
-        system_prompt=MANAGER_AGENT_PROMPT,
+        tools=[],
+        managed_agents=[finder_agent, companies_house_agent],
         name="manager_agent",
-        description="Coordinating manager for due diligence agents",
+        description="Johnny Bravo himself: coordinating agents and compiling comprehensive due diligence reports with style",
+        planning_interval=3,
     )
 
     return manager_agent
@@ -213,7 +211,10 @@ def run_due_diligence(company_name: str) -> dict:
         try:
             # Run the manager agent to collect data and generate report
             result = manager_agent.run(task)
-            parsed_result = json.loads(result)
+            if isinstance(result, str):
+                parsed_result = json.loads(result)
+            else:
+                parsed_result = result
             
             if parsed_result["image"] not in ["amazing.gif", "good.gif", "dubious.gif"]:
                 parsed_result["image"] = "dubious.gif"
@@ -236,7 +237,7 @@ def run_due_diligence(company_name: str) -> dict:
                 "recommendation": "Unable to generate recommendation due to error",
                 "image": "dubious.gif"
             }
-            return json.dumps(error_response)
+            return error_response  # Return dictionary, not json.dumps(error_response)
 
 
 def visualize_agent_structure():

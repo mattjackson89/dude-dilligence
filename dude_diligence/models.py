@@ -142,15 +142,4 @@ class ReportMetadata(BaseModel):
     future_research_suggestions: List[str] = Field(default_factory=list)
 
 
-class ScoringSystem(BaseModel):
-    """Scoring system for company evaluation."""
-    financial_health_score: float = 0.0
-    operational_risk_score: float = 0.0
-    legal_compliance_score: float = 0.0
-    market_position_score: float = 0.0
-    leadership_quality_score: float = 0.0
-    overall_score: float = 0.0
-    confidence_level: float = 0.0
-    score_explanation: str = ""
-
 

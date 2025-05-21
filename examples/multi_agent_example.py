@@ -73,7 +73,8 @@ def run_example():
     print("\nRunning multi-agent process (this may take a few minutes)...")
 
     # Run the multi-agent due diligence
-    report = run_due_diligence(company_name, research_areas)
+    # Note: research_areas are determined internally by the agent system
+    report = run_due_diligence(company_name)
 
     print("\n=== Multi-Agent Due Diligence Report ===\n")
     print(report)

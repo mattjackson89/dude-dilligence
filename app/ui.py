@@ -9,6 +9,7 @@ import uuid
 import logging
 import markdown
 from pathlib import Path
+import json
 
 from dude_diligence import run_due_diligence
 from dude_diligence.agents import create_manager_agent
@@ -248,6 +249,9 @@ def create_ui():
                 # Add details section
                 gr.Markdown("## Due Diligence Report")
                 report_output = gr.HTML()
+
+                with gr.Accordion("Raw Report Data", open=False):
+                    json_output = gr.JSON(label="Report Data")
 
             # Chat on right (25% width)
             with gr.Column(scale=1):
